@@ -11,8 +11,10 @@ import { env } from "@/env";
 import {
   buildReflectionPrompt,
   buildWeekPrompt,
+  clip,
   REFLECTION_INSTRUCTIONS,
   WEEK_INSTRUCTIONS,
+  weekPromptOrder,
 } from "./prompts";
 
 /** `vector(1536)` in supabase/migrations/0001_init.sql. */
@@ -49,7 +51,8 @@ const WeekOutputSchema = z.object({
       z.object({
         title: z.string(),
         text: z.string(),
-        entryIds: z.array(z.string()),
+        /** `#n` numbers from the week prompt, not ids (fewer tokens). */
+        entries: z.array(z.number()),
       }),
     )
     .min(1)
@@ -57,27 +60,29 @@ const WeekOutputSchema = z.object({
 });
 type WeekOutput = z.infer<typeof WeekOutputSchema>;
 
-const clip = (text: string, max: number) => {
-  const flat = text.replace(/\s+/g, " ").trim();
-  return flat.length > max ? `${flat.slice(0, max - 1).trimEnd()}…` : flat;
-};
+const oneLine = (text: string) => text.replace(/\s+/g, " ");
 
 /**
- * Fits model output to the WeekTheme contract: known entry ids only, length
- * limits, at most 5 themes. Pure, for tests.
+ * Fits model output to the WeekTheme contract: entry numbers mapped back to
+ * ids (unknown ones dropped), length limits, at most 5 themes. Pure, for tests.
  */
 export function normalizeThemes(
   output: WeekOutput,
   entries: Entry[],
 ): WeekTheme[] {
-  const known = new Set(entries.map((e) => e.id));
+  const ordered = weekPromptOrder(entries);
   return output.themes
     .map((theme) => ({
-      title: clip(theme.title, 60),
-      text: clip(theme.text, 240),
-      entryIds: [...new Set(theme.entryIds.map((id) => id.trim()))]
-        .filter((id) => known.has(id))
-        .slice(0, 5),
+      title: clip(oneLine(theme.title), 60),
+      text: clip(oneLine(theme.text), 240),
+      entryIds: [
+        ...new Set(
+          theme.entries.flatMap((n) => {
+            const entry = Number.isInteger(n) ? ordered[n - 1] : undefined;
+            return entry ? [entry.id] : [];
+          }),
+        ),
+      ].slice(0, 5),
     }))
     .filter((theme) => theme.title && theme.text)
     .slice(0, 5);
@@ -90,9 +95,12 @@ export class OpenRouterAiClient implements AiClient {
       model: openRouter().chat(env.OPENROUTER_CHAT_MODEL),
       instructions: REFLECTION_INSTRUCTIONS,
       prompt: buildReflectionPrompt(request),
-      maxOutputTokens: 400,
+      // ≤ 120 words ≈ 160 tokens; the cap keeps a rambling model cheap.
+      maxOutputTokens: 250,
       temperature: 0.7,
-      maxRetries: 1,
+      // Retrying a rate-limited `:free` model only burns another request:
+      // the route reports "busy" and the user tries again.
+      maxRetries: 0,
       timeout: { totalMs: 60_000, firstChunkMs: 20_000 },
     });
     // `textStream` hides errors; the full stream surfaces them so the route
@@ -109,9 +117,9 @@ export class OpenRouterAiClient implements AiClient {
       instructions: WEEK_INSTRUCTIONS,
       prompt: buildWeekPrompt(entries),
       output: Output.object({ schema: WeekOutputSchema }),
-      maxOutputTokens: 1200,
+      maxOutputTokens: 400,
       temperature: 0.4,
-      maxRetries: 1,
+      maxRetries: 0,
       timeout: 60_000,
     });
     const themes = normalizeThemes(output, entries);

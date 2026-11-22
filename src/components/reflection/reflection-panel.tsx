@@ -8,7 +8,7 @@ import type { RecalledRef, Reflection } from "@/contracts/journal";
 
 import { CrisisCard } from "./crisis-card";
 import { RecalledNote } from "./recalled-note";
-import { requestReflection } from "./request-reflection";
+import { ModelBusyError, requestReflection } from "./request-reflection";
 
 /** Props are a contract: stream 1-entries renders this on the entry page. */
 export interface ReflectionPanelProps {
@@ -24,18 +24,30 @@ export interface ReflectionPanelProps {
   edited?: boolean;
 }
 
+interface Reply {
+  text: string;
+  recalled: RecalledRef[];
+}
+
+/** Why a regenerate didn't replace the reply that is still shown. */
+interface Notice {
+  kind: "limit" | "error";
+  text: string;
+}
+
 type PanelState =
   | { kind: "streaming"; text: string }
-  | { kind: "done"; text: string; recalled: RecalledRef[] }
+  | ({ kind: "done"; notice?: Notice } & Reply)
   | { kind: "crisis" }
   | { kind: "limit"; text: string }
-  | { kind: "error" };
+  | { kind: "error"; text: string };
 
 const COPY = {
   replying: "Echo is replying…",
   ready: "Reply ready",
   noMemory: "Echo starts recalling after a few entries.",
   error: "Echo couldn't reply right now. Your entry is saved.",
+  busy: "Echo is busy right now. Your entry is saved — try again in a minute.",
   limitFallback: "You've used today's replies. Echo will be back tomorrow.",
   disclaimer: "Echo is not a therapist.",
 } as const;
@@ -57,7 +69,7 @@ function stateFrom(reflection: Reflection | null): PanelState {
     case "limit":
       return { kind: "limit", text: reflection.text || COPY.limitFallback };
     case "error":
-      return { kind: "error" };
+      return { kind: "error", text: COPY.error };
   }
 }
 
@@ -104,11 +116,25 @@ function Panel({
   const [announcement, setAnnouncement] = useState("");
   const [regenerated, setRegenerated] = useState(false);
   const inFlight = useRef(false);
+  // The last good reply: a regenerate that fails or hits the limit keeps it
+  // on screen (the server keeps it too).
+  const lastReply = useRef<Reply | null>(
+    initialReflection?.status === "done"
+      ? { text: initialReflection.text, recalled: initialReflection.recalled }
+      : null,
+  );
 
   const ask = useCallback(
     async (regenerate: boolean) => {
       if (inFlight.current) return;
       inFlight.current = true;
+      const previous = regenerate ? lastReply.current : null;
+      const keepPrevious = (notice: Notice) => {
+        if (!previous) return false;
+        setState({ kind: "done", ...previous, notice });
+        setAnnouncement(notice.text);
+        return true;
+      };
       setState({ kind: "streaming", text: "" });
       setAnnouncement(COPY.replying);
       try {
@@ -121,25 +147,28 @@ function Panel({
             setState({ kind: "crisis" });
             setAnnouncement("");
             break;
-          case "limit":
-            setState({
-              kind: "limit",
-              text: result.text || COPY.limitFallback,
-            });
-            setAnnouncement(result.text || COPY.limitFallback);
+          case "limit": {
+            const text = result.text || COPY.limitFallback;
+            if (!keepPrevious({ kind: "limit", text })) {
+              setState({ kind: "limit", text });
+              setAnnouncement(text);
+            }
             break;
-          default:
-            setState({
-              kind: "done",
-              text: result.text,
-              recalled: result.recalled,
-            });
+          }
+          default: {
+            const reply = { text: result.text, recalled: result.recalled };
+            lastReply.current = reply;
+            setState({ kind: "done", ...reply });
             setAnnouncement(COPY.ready);
+            if (regenerate) setRegenerated(true);
+          }
         }
-        if (regenerate) setRegenerated(true);
-      } catch {
-        setState({ kind: "error" });
-        setAnnouncement(COPY.error);
+      } catch (error) {
+        const text = error instanceof ModelBusyError ? COPY.busy : COPY.error;
+        if (!keepPrevious({ kind: "error", text })) {
+          setState({ kind: "error", text });
+          setAnnouncement(text);
+        }
       } finally {
         inFlight.current = false;
       }
@@ -156,10 +185,12 @@ function Panel({
   }, [autoRequest, ask]);
 
   const streaming = state.kind === "streaming";
+  const notice = state.kind === "done" ? state.notice : undefined;
+  const canRetry = state.kind === "error" || notice?.kind === "error";
   const canRegenerate =
     edited &&
     !regenerated &&
-    (state.kind === "done" || state.kind === "crisis");
+    ((state.kind === "done" && !notice) || state.kind === "crisis");
   const recalled = state.kind === "done" ? state.recalled : [];
 
   return (
@@ -186,9 +217,11 @@ function Panel({
           </div>
         )}
 
+        {notice ? <p className="mt-1 text-sm">{notice.text}</p> : null}
+
         {state.kind !== "crisis" || canRegenerate ? (
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-3">
-            {state.kind === "error" ? (
+            {canRetry ? (
               <Button size="lg" className="px-4" onClick={() => void ask(true)}>
                 Try again
               </Button>
@@ -264,10 +297,8 @@ function ReplyBody({
         </p>
       );
     case "done":
-      return <p className={replyText}>{state.text}</p>;
     case "limit":
-      return <p className={replyText}>{state.text}</p>;
     case "error":
-      return <p className={replyText}>{COPY.error}</p>;
+      return <p className={replyText}>{state.text}</p>;
   }
 }

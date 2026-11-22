@@ -15,8 +15,11 @@ import type {
 } from "@/contracts/journal";
 import type { Session } from "@/contracts/session";
 import { isCrisisText } from "@/server/ai/crisis";
+import { isModelBusyError } from "@/server/ai/errors";
 import { toRecalledRef } from "@/server/memory/recall";
 import { dailyLimitMessage } from "@/server/usage/messages";
+
+import { getInFlightReplies, type InFlightReplies } from "./in-flight";
 
 /** How many past entries Echo recalls for one reply. */
 export const RECALL_COUNT = 3;
@@ -26,6 +29,8 @@ export interface ReflectDeps {
   getSession: () => Promise<Session | null>;
   /** Keeps generating (and saving) after the client disconnects. */
   waitUntil?: (work: Promise<unknown>) => void;
+  /** Defaults to the process-wide registry. */
+  inFlight?: InFlightReplies;
 }
 
 /** A reply response: a text body plus the status and recalled headers. */
@@ -83,10 +88,48 @@ async function startStream(
   }
 }
 
+/** 409 while the same reply is still generating: no quota, no model call. */
+function busyResponse(): Response {
+  return new Response(null, {
+    status: 409,
+    headers: {
+      "cache-control": "no-store",
+      "retry-after": "2",
+      [REFLECT_STATUS_HEADER]: "streaming",
+    },
+  });
+}
+
+/** 503 when the model is rate-limited or overloaded; the client says "busy". */
+function busyModelResponse(): Response {
+  return Response.json(
+    { error: "busy" },
+    {
+      status: 503,
+      headers: { "cache-control": "no-store", "retry-after": "60" },
+    },
+  );
+}
+
+interface ReplyContext {
+  backend: ReflectDeps["backend"];
+  userId: string;
+  entry: Entry;
+  /** A good reply exists: failures and limits must not replace it. */
+  keepExisting: boolean;
+}
+
+interface ReplyOutcome {
+  response: Response;
+  /** Settles (never rejects) when a streamed reply is saved or has failed. */
+  finished?: Promise<void>;
+}
+
 /**
- * POST /api/reflect: session → entry → existing reply → crisis guard →
- * daily limit → memory → streamed reply, saved when it finishes.
- * Errors never touch the entry; a failed regenerate keeps the old reply.
+ * POST /api/reflect: session → entry → existing reply → one generation per
+ * entry at a time → crisis guard → daily limit check → memory → model call
+ * → quota used on the first token → streamed reply, saved when it finishes. Errors never touch the entry; a failed regenerate
+ * keeps the old reply.
  */
 export async function handleReflect(
   request: Request,
@@ -116,8 +159,39 @@ export async function handleReflect(
     }
     // A saved "limit" or "error" is not a reply: try again.
   }
-  const keepExisting = existing?.status === "done";
 
+  // Held from before the quota is used until the reply is saved or fails.
+  const release = (deps.inFlight ?? getInFlightReplies()).tryAcquire(
+    userId,
+    entry.id,
+  );
+  if (!release) return busyResponse();
+
+  let outcome: ReplyOutcome | undefined;
+  try {
+    outcome = await reply({
+      backend,
+      userId,
+      entry,
+      keepExisting: existing?.status === "done",
+    });
+    return outcome.response;
+  } finally {
+    if (outcome?.finished) {
+      const settled = outcome.finished.finally(release);
+      deps.waitUntil?.(settled);
+    } else {
+      release();
+    }
+  }
+}
+
+async function reply({
+  backend,
+  userId,
+  entry,
+  keepExisting,
+}: ReplyContext): Promise<ReplyOutcome> {
   const save = (
     status: ReflectionStatus,
     text: string,
@@ -133,18 +207,31 @@ export async function handleReflect(
     return backend.reflections.save(userId, reflection);
   };
 
-  // Crisis guard: no model call and no quota used.
+  /** Records a state without letting a storage failure hide it. */
+  const record = async (status: ReflectionStatus, text: string) => {
+    try {
+      await save(status, text);
+    } catch (error) {
+      console.error(`Couldn't record the "${status}" state`, error);
+    }
+  };
+
+  // Crisis guard: no model call and no quota used. The card is shown even
+  // if saving the state fails — safety copy never depends on storage.
   if (isCrisisText(entry.text)) {
-    await save("crisis", "");
-    return reflectResponse(null, "crisis", []);
+    await record("crisis", "");
+    return { response: reflectResponse(null, "crisis", []) };
   }
 
-  const usage = await backend.usage.consume(userId);
-  if (!usage.allowed) {
+  const limitReached = async (): Promise<ReplyOutcome> => {
     const message = dailyLimitMessage(backend.usage.limit());
-    if (!keepExisting) await save("limit", message);
-    return reflectResponse(message, "limit", []);
-  }
+    if (!keepExisting) await record("limit", message);
+    return { response: reflectResponse(message, "limit", []) };
+  };
+
+  // Checked before the model call, but used only once the model has
+  // answered: a call that fails before its first token costs no quota.
+  if ((await backend.usage.remaining(userId)) <= 0) return limitReached();
 
   const similar = await recall(backend.memory, userId, entry);
   const recalled = similar.map((s) => ({
@@ -153,14 +240,9 @@ export async function handleReflect(
   }));
   const refs = recalled.map((r) => r.ref);
 
-  const saveError = async (error: unknown) => {
+  const fail = async (error: unknown) => {
     console.error("Echo couldn't reply", error);
-    if (keepExisting) return;
-    try {
-      await save("error", "");
-    } catch (saveFailure) {
-      console.error("Couldn't record the failed reply", saveFailure);
-    }
+    if (!keepExisting) await record("error", "");
   };
 
   let started: { iterator: AsyncIterator<string>; first: string };
@@ -169,10 +251,36 @@ export async function handleReflect(
       backend.ai.streamReflection({ entry, recalled }),
     );
   } catch (error) {
-    await saveError(error);
-    return jsonError("Echo couldn't reply right now", 502);
+    if (isModelBusyError(error)) {
+      // Rate-limited or overloaded (e.g. a `:free` model): nothing saved,
+      // no quota used — the user just tries again.
+      console.warn("Echo's model is busy", error);
+      return { response: busyModelResponse() };
+    }
+    await fail(error);
+    return { response: jsonError("Echo couldn't reply right now", 502) };
   }
   const { iterator, first } = started;
+
+  const stopModel = async () => {
+    try {
+      await iterator.return?.();
+    } catch {
+      // Already finished or failed; nothing to stop.
+    }
+  };
+  let usage: { allowed: boolean };
+  try {
+    usage = await backend.usage.consume(userId);
+  } catch (error) {
+    await stopModel();
+    throw error;
+  }
+  if (!usage.allowed) {
+    // Another reply took the last unit meanwhile: stop this one.
+    await stopModel();
+    return limitReached();
+  }
 
   const encoder = new TextEncoder();
   let open = true;
@@ -204,7 +312,7 @@ export async function handleReflect(
           await save("done", reply, refs);
           if (open) controller.close();
         } catch (error) {
-          await saveError(error);
+          await fail(error);
           if (open) controller.error(error);
         } finally {
           open = false;
@@ -215,7 +323,6 @@ export async function handleReflect(
       open = false;
     },
   });
-  deps.waitUntil?.(finished);
 
-  return reflectResponse(body, "streaming", refs);
+  return { response: reflectResponse(body, "streaming", refs), finished };
 }

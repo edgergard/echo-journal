@@ -1,3 +1,4 @@
+import { APICallError } from "ai";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -191,6 +192,8 @@ describe("POST /api/reflect", () => {
     const response = await post({ entryId: entry.id });
     expect(response.status).toBe(502);
     expect(await backend.entries.get(DEMO_USER_ID, entry.id)).not.toBeNull();
+    // It failed before the first token, so it cost no quota.
+    expect(await backend.usage.remaining(DEMO_USER_ID)).toBe(10);
     expect(
       (await backend.reflections.get(DEMO_USER_ID, entry.id))?.status,
     ).toBe("error");
@@ -202,6 +205,38 @@ describe("POST /api/reflect", () => {
     expect(await backend.reflections.get(DEMO_USER_ID, "demo-e01")).toEqual(
       before,
     );
+  });
+
+  it("reports a rate-limited model as busy: no quota, nothing saved", async () => {
+    const rateLimited: AiClient = {
+      async *streamReflection() {
+        throw new APICallError({
+          message: "Rate limit exceeded: free-models-per-min",
+          url: "https://openrouter.ai/api/v1/chat/completions",
+          requestBodyValues: {},
+          statusCode: 429,
+          isRetryable: true,
+        });
+      },
+      summarizeWeek: async () => [],
+    };
+    const backend = makeBackend({ ai: rateLimited });
+    const save = vi.spyOn(backend.reflections, "save");
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const entry = await backend.entries.create(DEMO_USER_ID, {
+      text: "A normal day.",
+      mood: "okay",
+    });
+
+    const response = await post({ entryId: entry.id });
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: "busy" });
+    expect(await backend.usage.remaining(DEMO_USER_ID)).toBe(10);
+    expect(save).not.toHaveBeenCalled();
+    expect(await backend.reflections.get(DEMO_USER_ID, entry.id)).toBeNull();
+    expect(await backend.entries.get(DEMO_USER_ID, entry.id)).not.toBeNull();
+    // Not stuck as "generating": the next try reaches the model again.
+    expect((await post({ entryId: entry.id })).status).toBe(503);
   });
 
   it("errors the stream when the model fails mid-reply", async () => {
@@ -226,6 +261,100 @@ describe("POST /api/reflect", () => {
     expect(
       (await backend.reflections.get(DEMO_USER_ID, entry.id))?.status,
     ).toBe("error");
+  });
+
+  it("runs one generation when the same reply is requested twice at once", async () => {
+    const backend = makeBackend({ ai: new FakeAiClient(5) });
+    const stream = vi.spyOn(backend.ai, "streamReflection");
+    const consume = vi.spyOn(backend.usage, "consume");
+    const entry = await backend.entries.create(DEMO_USER_ID, {
+      text: "Called Dad about the move.",
+      mood: "good",
+    });
+
+    const [a, b] = await Promise.all([
+      post({ entryId: entry.id }),
+      post({ entryId: entry.id }),
+    ]);
+    const [first, busy] = a.status === 200 ? [a, b] : [b, a];
+    expect(first.status).toBe(200);
+    expect(busy.status).toBe(409);
+    expect(busy.headers.get(REFLECT_STATUS_HEADER)).toBe("streaming");
+    expect(consume).toHaveBeenCalledOnce();
+    expect(stream).toHaveBeenCalledOnce();
+
+    // A reload while it is still generating is turned away too…
+    expect((await post({ entryId: entry.id })).status).toBe(409);
+    // …and once the reply is saved, it is served without a model call.
+    const text = await first.text();
+    await Promise.all(state.pending);
+    const after = await post({ entryId: entry.id });
+    expect(after.headers.get(REFLECT_STATUS_HEADER)).toBe("done");
+    expect(await after.text()).toBe(text);
+    expect(consume).toHaveBeenCalledOnce();
+    expect(stream).toHaveBeenCalledOnce();
+  });
+
+  it("frees the entry for a new request after a limit or an error", async () => {
+    const backend = makeBackend({ limit: 1 });
+    await backend.usage.consume(DEMO_USER_ID);
+    const entry = await backend.entries.create(DEMO_USER_ID, {
+      text: "Quiet evening.",
+      mood: "okay",
+    });
+    expect((await post({ entryId: entry.id })).status).toBe(200);
+    const again = await post({ entryId: entry.id });
+    expect(again.headers.get(REFLECT_STATUS_HEADER)).toBe("limit");
+  });
+
+  it("still shows the crisis card when saving the state fails", async () => {
+    const backend = makeBackend();
+    const stream = vi.spyOn(backend.ai, "streamReflection");
+    vi.spyOn(backend.reflections, "save").mockRejectedValue(
+      new Error("database down"),
+    );
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const entry = await backend.entries.create(DEMO_USER_ID, {
+      text: "I want to end my life.",
+      mood: "rough",
+    });
+
+    const response = await post({ entryId: entry.id });
+    expect(response.status).toBe(200);
+    expect(response.headers.get(REFLECT_STATUS_HEADER)).toBe("crisis");
+    expect(stream).not.toHaveBeenCalled();
+    expect(await backend.usage.remaining(DEMO_USER_ID)).toBe(10);
+  });
+
+  it("stops the model if the last unit of quota went elsewhere meanwhile", async () => {
+    let stopped = false;
+    const ai: AiClient = {
+      async *streamReflection() {
+        try {
+          yield "Thank you ";
+          yield "for writing.";
+        } finally {
+          stopped = true;
+        }
+      },
+      summarizeWeek: async () => [],
+    };
+    const backend = makeBackend({ ai });
+    vi.spyOn(backend.usage, "consume").mockResolvedValue({
+      allowed: false,
+      remaining: 0,
+    });
+    const entry = await backend.entries.create(DEMO_USER_ID, {
+      text: "Quiet evening.",
+      mood: "okay",
+    });
+
+    const response = await post({ entryId: entry.id });
+    expect(response.headers.get(REFLECT_STATUS_HEADER)).toBe("limit");
+    expect(stopped).toBe(true);
+    expect(
+      (await backend.reflections.get(DEMO_USER_ID, entry.id))?.status,
+    ).toBe("limit");
   });
 
   it("rejects bad requests", async () => {

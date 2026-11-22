@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Reflection } from "@/contracts/journal";
 
 import { ReflectionPanel } from "./reflection-panel";
+import { GENERATING_RETRY } from "./request-reflection";
 
 const RECALLED = [
   {
@@ -69,6 +70,7 @@ function lastBody() {
 }
 
 beforeEach(() => {
+  GENERATING_RETRY.delayMs = 0;
   fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
 });
@@ -264,5 +266,88 @@ describe("ReflectionPanel", () => {
     expect(
       screen.queryByRole("button", { name: "Regenerate reply" }),
     ).not.toBeInTheDocument();
+  });
+  it("waits while the reply is generating elsewhere, then shows it", async () => {
+    fetchMock
+      .mockResolvedValueOnce(new Response(null, { status: 409 }))
+      .mockResolvedValueOnce(new Response(null, { status: 409 }))
+      .mockResolvedValueOnce(
+        new Response("Saved in the other tab.", { headers: headers("done") }),
+      );
+    render(<ReflectionPanel entryId="e1" initialReflection={null} />);
+
+    expect(screen.getByRole("status")).toHaveTextContent("Echo is replying…");
+    expect(await screen.findByText("Saved in the other tab.")).toBeVisible();
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(lastBody()).toEqual({ entryId: "e1", regenerate: false });
+  });
+
+  it("gives up after a few waits and offers to try again", async () => {
+    fetchMock.mockImplementation(
+      async () => new Response(null, { status: 409 }),
+    );
+    render(<ReflectionPanel entryId="e1" initialReflection={null} />);
+
+    expect(
+      await screen.findByRole("button", { name: "Try again" }),
+    ).toBeVisible();
+    expect(fetchMock).toHaveBeenCalledTimes(GENERATING_RETRY.attempts + 1);
+  });
+
+  it("says Echo is busy when the model is rate-limited", async () => {
+    fetchMock.mockResolvedValueOnce(
+      Response.json({ error: "busy" }, { status: 503 }),
+    );
+    render(<ReflectionPanel entryId="e1" initialReflection={null} justSaved />);
+
+    expect(
+      await screen.findByText(
+        "Echo is busy right now. Your entry is saved — try again in a minute.",
+        { selector: VISIBLE },
+      ),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
+  });
+
+  it("keeps the reply when a regenerate hits the daily limit", async () => {
+    const limit = "You've used today's 10 replies. Echo will be back tomorrow.";
+    fetchMock.mockResolvedValueOnce(
+      new Response(limit, { headers: headers("limit") }),
+    );
+    render(<ReflectionPanel entryId="e1" initialReflection={done()} edited />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Regenerate reply" }));
+    expect(await screen.findByText(limit, { selector: VISIBLE })).toBeVisible();
+    expect(screen.getByText(/A quiet flat after a loud month/)).toBeVisible();
+    expect(
+      screen.getAllByRole("link", { name: /Open entry from/ }),
+    ).toHaveLength(2);
+    expect(
+      screen.queryByRole("button", { name: "Regenerate reply" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+  });
+
+  it("keeps the reply when a regenerate fails, with a way to retry", async () => {
+    fetchMock.mockResolvedValueOnce(
+      Response.json({ error: "down" }, { status: 502 }),
+    );
+    render(<ReflectionPanel entryId="e1" initialReflection={done()} edited />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Regenerate reply" }));
+    expect(
+      await screen.findByText(
+        "Echo couldn't reply right now. Your entry is saved.",
+        { selector: VISIBLE },
+      ),
+    ).toBeVisible();
+    expect(screen.getByText(/A quiet flat after a loud month/)).toBeVisible();
+
+    fetchMock.mockResolvedValueOnce(
+      new Response("Second try.", { headers: headers("streaming", []) }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(await screen.findByText("Second try.")).toBeVisible();
+    expect(lastBody()).toEqual({ entryId: "e1", regenerate: true });
   });
 });
