@@ -1,6 +1,6 @@
 # Echo Journal — build plan
 
-Status: foundation
+Status: foundation done (dev a69d2db)
 Orchestrator launch mode: CLI
 Merge method: GitHub PR into dev
 Repo: C:\Projects\echo-journal Remote: https://github.com/edgergard/echo-journal Visibility: public
