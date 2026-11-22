@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { formatLongDate } from "@/components/entries/mood";
@@ -10,6 +11,8 @@ import { requireSession } from "@/server/auth/require-session";
 export const metadata: Metadata = { title: "New entry" };
 
 async function NewEntry() {
+  // Today's date is per request: defer to request time before `new Date()`.
+  await connection();
   await requireSession(routes.newEntry);
   return (
     <>

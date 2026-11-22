@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { SettingsView } from "@/components/settings/settings-view";
@@ -15,6 +16,8 @@ import { getBackend } from "@/server/backend";
 export const metadata: Metadata = { title: "Settings" };
 
 async function SettingsContent() {
+  // "Replies left today" depends on the current UTC day: request time only.
+  await connection();
   const session = await requireSession(routes.settings);
   const usage = getBackend().usage;
   const repliesLeft = await usage.remaining(session.userId);
