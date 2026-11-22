@@ -1,6 +1,6 @@
 # Echo Journal — build plan
 
-Status: wave-1 done — wave 2 next
+Status: wave-2 running
 Orchestrator launch mode: CLI
 Merge method: GitHub PR into dev
 Repo: C:\Projects\echo-journal Remote: https://github.com/edgergard/echo-journal Visibility: public
@@ -79,9 +79,9 @@ CI needs none of these (demo mode).
 
 ### Wave 2
 
-| Stream    | Branch           | Owns (only these paths)           | Port | Provider/profile · mode         | Agent ID | Workspace ID | Status  | PR  |
-| --------- | ---------------- | --------------------------------- | ---- | ------------------------------- | -------- | ------------ | ------- | --- |
-| 2-quality | stream/2-quality | e2e/**, README.md, docs/assets/** | 3105 | claude/claude-sonnet-5-5 · auto |          |              | pending |     |
+| Stream    | Branch           | Owns (only these paths)                                                                          | Port | Provider/profile · mode         | Agent ID | Workspace ID         | Status  | PR  |
+| --------- | ---------------- | ------------------------------------------------------------------------------------------------ | ---- | ------------------------------- | -------- | -------------------- | ------- | --- |
+| 2-quality | stream/2-quality | e2e/**, README.md, docs/assets/**, minimal axe fixes in src/app/** + src/components/** (not ui/) | 3105 | claude/claude-sonnet-5-5 · auto | cc886362 | wks_f1b9384e87f6a6b6 | running |     |
 
 Status values: pending · running · permission · escalation · done (report in) · in review · fixing · merged · failed
 
@@ -105,3 +105,4 @@ Retries: 0 · Failed streams: 0 · Escalations: 0 · Red dev fixes: 0 · Review 
 - 2026-11-23 1-auth merged (#5 → 2efe955); review fixed: next-path tests incl. backslash tricks, logged swallowed errors (+ unstable_rethrow for redirect errors)
 - 2026-11-23 1-ai merged (#6 → 6b9f1d4); review fixed: in-flight dedupe (409), crisis card independent of save, reply kept on regenerate limit, token caps, 429 busy without quota
 - 2026-11-23 integration fix on dev 8dd76b4: week summary uses quota only after the model succeeds
+- 2026-11-23 wave 2 launched from dev 4030c74 (2-quality, brief updated to what wave 1 built)
