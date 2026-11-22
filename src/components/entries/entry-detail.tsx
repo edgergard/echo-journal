@@ -3,7 +3,7 @@
 import { ArrowLeft, Ellipsis, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   deleteEntryAction,
@@ -35,15 +35,24 @@ interface EntryDetailProps {
 export function EntryDetail({
   entry: initialEntry,
   reflection,
-  justSaved = false,
+  justSaved: justSavedParam = false,
 }: EntryDetailProps) {
   const router = useRouter();
+  // Remember the flag from first render: the URL param is dropped below, and
+  // the status and the panel must keep it for this visit.
+  const [justSaved] = useState(justSavedParam);
   const [entry, setEntry] = useState(initialEntry);
   const [editing, setEditing] = useState(false);
   const [edited, setEdited] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  // Drop ?saved=1 so a reload doesn't announce "Entry saved" again.
+  useEffect(() => {
+    if (justSaved)
+      router.replace(routes.entry(initialEntry.id), { scroll: false });
+  }, [justSaved, router, initialEntry.id]);
 
   async function confirmDelete() {
     setDeleting(true);

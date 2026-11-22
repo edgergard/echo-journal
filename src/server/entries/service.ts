@@ -20,7 +20,8 @@ export async function createEntryFor(
   if (!parsed.success) return { ok: false, error: firstIssue(parsed.error) };
   try {
     return { ok: true, entry: await repo.create(userId, parsed.data) };
-  } catch {
+  } catch (error) {
+    console.error("[entries] create failed", error);
     return {
       ok: false,
       error: "Couldn't save your entry. Your text is still here — try again.",
@@ -43,7 +44,8 @@ export async function updateEntryFor(
       return { ok: false, error: "This entry doesn't exist or was deleted." };
     }
     return { ok: true, entry };
-  } catch {
+  } catch (error) {
+    console.error("[entries] update failed", error);
     return {
       ok: false,
       error: "Couldn't save your changes. Your text is still here — try again.",

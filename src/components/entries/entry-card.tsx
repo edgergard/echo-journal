@@ -19,7 +19,7 @@ export function EntryCard({ entry, replied = false }: EntryCardProps) {
   return (
     <Link
       href={routes.entry(entry.id)}
-      aria-label={`${date}, ${mood}: ${firstLine(entry.text)}`}
+      aria-label={`${date}, ${mood}: ${firstLine(entry.text)}${replied ? ", Echo replied" : ""}`}
       className="block rounded-lg border bg-card px-5 py-5 text-card-foreground transition-colors outline-none hover:bg-accent focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 sm:px-6"
     >
       <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">

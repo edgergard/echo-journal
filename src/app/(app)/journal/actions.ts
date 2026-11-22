@@ -28,8 +28,11 @@ export async function updateEntryAction(
 export async function deleteEntryAction(id: string): Promise<{ ok: boolean }> {
   const session = await requireSession(routes.entry(id));
   try {
-    return { ok: await getBackend().entries.remove(session.userId, id) };
-  } catch {
+    const removed = await getBackend().entries.remove(session.userId, id);
+    if (!removed) console.warn("[entries] delete: entry not found", id);
+    return { ok: removed };
+  } catch (error) {
+    console.error("[entries] delete failed", error);
     return { ok: false };
   }
 }
@@ -57,7 +60,8 @@ export async function loadOlderEntriesAction(
       repliedIds: [...replied],
       nextBefore: page.nextBefore,
     };
-  } catch {
+  } catch (error) {
+    console.error("[entries] load older failed", error);
     return null;
   }
 }
