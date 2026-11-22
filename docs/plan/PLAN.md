@@ -19,7 +19,8 @@ A web journal whose AI companion ("Echo") replies to each entry with memory of p
 - **Demo mode (L-029):** with no Supabase env the app runs on an in-memory backend seeded with the demo persona (20 entries), and with no OpenRouter key on a fake AI that streams canned replies — so streams, CI and the smoke run need no keys. Real services switch on when their env vars are set.
 - App screens live in a route group `src/app/(app)/` (URLs unchanged: `/journal`, `/week`, `/settings`) so one layout renders the AppHeader; design.md's Routes table lists the paths without the group.
 - Demo account in real mode: a fixed Supabase user (`DEMO_USER_EMAIL` / `DEMO_USER_PASSWORD`, server-only); "Try the demo" signs in server-side. Demo data reset: "Reset demo data" in settings (daily cron is Later).
-- Daily AI limit: 10 calls per user per UTC day (`AI_DAILY_LIMIT`), replies and week summaries share it.
+- Daily AI limit: 10 calls per user per UTC day (`AI_DAILY_LIMIT`), replies and week summaries share it. The shared demo account keeps the same 10 (user decision 2026-11-23).
+- **Cost: as close to $0 as possible (user, 2026-11-23).** Production chat model = an OpenRouter `:free` model chosen at deploy (set `OPENROUTER_CHAT_MODEL`); reply ≤ ~250 output tokens, week summary ≤ ~400; a provider 429/503 shows "Echo is busy" and uses no quota; spend cap $1–2 on the key. Embeddings stay paid (fractions of a cent).
 - Crisis detection: a keyword/phrase list (English) checked before any AI call; match → crisis card, no model call.
 - Embeddings: `openai/text-embedding-3-small` via OpenRouter, `vector(1536)`; chat: a cheap model via `OPENROUTER_CHAT_MODEL` (default `openai/gpt-4.1-mini`, _assumption_).
 - Accessibility target "Lighthouse a11y ≥ 90" is checked with axe in Playwright e2e plus one Lighthouse run in Phase 5.
