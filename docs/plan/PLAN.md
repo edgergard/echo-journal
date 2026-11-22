@@ -1,6 +1,6 @@
 # Echo Journal — build plan
 
-Status: wave-1 integrating
+Status: wave-1 done — wave 2 next
 Orchestrator launch mode: CLI
 Merge method: GitHub PR into dev
 Repo: C:\Projects\echo-journal Remote: https://github.com/edgergard/echo-journal Visibility: public
@@ -72,9 +72,9 @@ CI needs none of these (demo mode).
 
 | Stream    | Branch           | Owns (only these paths)                                                                                                                                                                                         | Port | Provider/profile · mode         | Agent ID | Workspace ID         | Status | PR  |
 | --------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- | ------------------------------- | -------- | -------------------- | ------ | --- |
-| 1-auth    | stream/1-auth    | src/app/page.tsx(+test), src/app/sign-in/**, src/app/auth/**, src/app/(app)/settings/**, src/proxy.ts(+test), src/server/auth/**, src/components/auth/**, src/components/settings/**, src/components/landing/** | 3101 | claude/claude-opus-5-5 · auto   | e429c983 | wks_ad278f649ad8dcef | fixing | #5  |
+| 1-auth    | stream/1-auth    | src/app/page.tsx(+test), src/app/sign-in/**, src/app/auth/**, src/app/(app)/settings/**, src/proxy.ts(+test), src/server/auth/**, src/components/auth/**, src/components/settings/**, src/components/landing/** | 3101 | claude/claude-opus-5-5 · auto   | e429c983 | wks_ad278f649ad8dcef | merged | #5  |
 | 1-entries | stream/1-entries | src/app/(app)/journal/** , src/server/entries/**, src/components/entries/**                                                                                                                                     | 3102 | claude/claude-sonnet-5-5 · auto | d190bb17 | wks_43af7e54ab8d649e | merged | #4  |
-| 1-ai      | stream/1-ai      | src/app/api/reflect/**, src/server/ai/**, src/server/memory/**, src/server/reflections/**, src/server/usage/**, src/components/reflection/**                                                                    | 3103 | claude/claude-opus-5-5 · auto   | ff4516e1 | wks_9bafda538d0201f9 | fixing | #6  |
+| 1-ai      | stream/1-ai      | src/app/api/reflect/**, src/server/ai/**, src/server/memory/**, src/server/reflections/**, src/server/usage/**, src/components/reflection/**                                                                    | 3103 | claude/claude-opus-5-5 · auto   | ff4516e1 | wks_9bafda538d0201f9 | merged | #6  |
 | 1-week    | stream/1-week    | src/app/(app)/week/**, src/app/api/week/**, src/server/week/**, src/components/week/**                                                                                                                          | 3104 | claude/claude-sonnet-5-5 · auto | 025fd37b | wks_38e979a77109001b | merged | #3  |
 
 ### Wave 2
@@ -88,7 +88,7 @@ Status values: pending · running · permission · escalation · done (report in
 ## Metrics
 
 Gate A approved: 2026-11-22 · Gate A rounds: 1
-Retries: 0 · Failed streams: 0 · Escalations: 0 · Red dev fixes: 0 · Review findings fixed: 5 · User corrections: 0
+Retries: 0 · Failed streams: 0 · Escalations: 0 · Red dev fixes: 0 · Review findings fixed: 15 · User corrections: 1
 
 ## Log
 
@@ -101,3 +101,7 @@ Retries: 0 · Failed streams: 0 · Escalations: 0 · Red dev fixes: 0 · Review 
 - 2026-11-22 contract fix on dev c1c3cce: safeNextPath rejected backslash/control-char open redirects (found in 1-auth review)
 - 2026-11-22 1-auth (#5) sent back: integrate c1c3cce + malicious-next tests, log swallowed errors
 - 2026-11-22 1-ai (#6) sent back: duplicate in-flight generation, crisis card independent of save, keep reply on regenerate limit
+- 2026-11-23 user: costs to the minimum → free chat model, token caps, 429 = busy without quota; demo limit stays 10
+- 2026-11-23 1-auth merged (#5 → 2efe955); review fixed: next-path tests incl. backslash tricks, logged swallowed errors (+ unstable_rethrow for redirect errors)
+- 2026-11-23 1-ai merged (#6 → 6b9f1d4); review fixed: in-flight dedupe (409), crisis card independent of save, reply kept on regenerate limit, token caps, 429 busy without quota
+- 2026-11-23 integration fix on dev 8dd76b4: week summary uses quota only after the model succeeds
