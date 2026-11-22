@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Echo — Journal (dark)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&amp;family=Literata:opsz,wght@7..72,400;7..72,500;7..72,600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#16181F}
+a{color:#9DB7E8}a:hover{color:#B8CCF0}
+a:focus-visible,button:focus-visible{outline:2px solid #9DB7E8;outline-offset:2px}
+</style>
+</helmet>
+<div style="min-height: 1100px; background: #16181F; color: #ECE6D8; font-family: 'Geist', system-ui, sans-serif; font-size: 15px; line-height: 1.5;">
+  <header style="border-bottom: 1px solid #343846;">
+    <div style="max-width: 1040px; margin: 0 auto; padding: 18px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 24px;">
+      <a href="Main.dc.html" style="font-family: 'Literata', Georgia, serif; font-size: 26px; font-weight: 600; color: #ECE6D8; text-decoration: none;">Echo</a>
+      <nav aria-label="Main" style="display: flex; gap: 4px; flex-grow: 1;">
+        <a href="Main.dc.html" aria-current="page" style="padding: 10px 14px; border-radius: 6px; background: #2A2E39; color: #ECE6D8; text-decoration: none; font-weight: 500;">Journal</a>
+        <a href="#" style="padding: 10px 14px; border-radius: 6px; color: #A9A79F; text-decoration: none;">Week</a>
+        <a href="#" style="padding: 10px 14px; border-radius: 6px; color: #A9A79F; text-decoration: none;">Settings</a>
+      </nav>
+      <a href="#" style="display: inline-flex; align-items: center; gap: 8px; padding: 11px 18px; border-radius: 6px; background: #9DB7E8; color: #16181F; text-decoration: none; font-weight: 500;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+        New entry
+      </a>
+    </div>
+  </header>
+  <main style="max-width: 760px; margin: 0 auto; padding: 56px 24px 72px;">
+    <h1 style="margin: 0 0 8px; font-family: 'Literata', Georgia, serif; font-size: 40px; font-weight: 500; letter-spacing: -0.01em;">Journal</h1>
+    <p style="margin: 0 0 40px; color: #A9A79F;">Six entries this month. Echo has read all of them.</p>
+    <ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 16px;">
+      <sc-for list="{{entries}}" as="e" hint-placeholder-count="6">
+        <li>
+          <a href="#" style="display: block; padding: 22px 26px; background: #1E212A; border: 1px solid #343846; border-radius: 6px; color: #ECE6D8; text-decoration: none;">
+            <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px; margin-bottom: 8px;">
+              <span style="font-weight: 600;">{{e.date}}</span>
+              <span style="padding: 2px 10px; border-radius: 999px; background: #2A2E39; color: #ECE6D8; font-size: 13px;">{{e.mood}}</span>
+              <sc-if value="{{e.replied}}" hint-placeholder-val="{{true}}">
+                <span style="margin-left: auto; color: #9DB7E8; font-size: 13px;">Echo replied</span>
+              </sc-if>
+            </div>
+            <p style="margin: 0; font-family: 'Literata', Georgia, serif; font-size: 17px; line-height: 1.65; color: #ECE6D8;">{{e.text}}</p>
+          </a>
+        </li>
+      </sc-for>
+    </ol>
+    <div style="margin-top: 32px; text-align: center;">
+      <button type="button" style="padding: 11px 20px; border-radius: 6px; border: 1px solid #6B6F7E; background: transparent; color: #ECE6D8; font: inherit;">Show older entries</button>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      entries: [
+        { date: 'Fri, Nov 20', mood: 'okay', replied: true, text: 'Finally finished the move. The new flat is quiet in a way I’m not used to yet; I keep listening for the neighbours’ radio.' },
+        { date: 'Thu, Nov 19', mood: 'low', replied: true, text: 'Didn’t sleep much again. Spent the evening packing books and found the letters from my grandmother.' },
+        { date: 'Tue, Nov 17', mood: 'good', replied: true, text: 'Long walk along the river after work. Called Marta, first time in weeks. We laughed about the camping trip.' },
+        { date: 'Sun, Nov 15', mood: 'rough', replied: true, text: 'Argued with Dad about the move. I said things I didn’t mean. Need to call him tomorrow.' },
+        { date: 'Fri, Nov 13', mood: 'great', replied: true, text: 'Got the offer. Sat in the car for ten minutes before telling anyone.' },
+        { date: 'Wed, Nov 11', mood: 'okay', replied: false, text: 'Quiet day. Read on the balcony until it got too cold.' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

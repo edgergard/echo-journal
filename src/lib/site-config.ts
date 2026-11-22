@@ -3,5 +3,5 @@ import { env } from "@/env";
 export const siteConfig = {
   name: env.NEXT_PUBLIC_APP_NAME,
   description:
-    "Next.js starter with the App Router, TypeScript, Tailwind CSS, shadcn/ui, Vitest and Claude Code configuration.",
+    "A web journal whose AI companion replies to each entry with memory of your past entries and sums up your week.",
 } as const;

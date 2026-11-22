@@ -16,7 +16,7 @@ const serverSchema = z.object({
  * To add one: add it here, to `clientValues` below and to .env.example.
  */
 const clientSchema = z.object({
-  NEXT_PUBLIC_APP_NAME: z.string().min(1).default("nextjs-pet-template"),
+  NEXT_PUBLIC_APP_NAME: z.string().min(1).default("Echo Journal"),
 });
 
 /**
