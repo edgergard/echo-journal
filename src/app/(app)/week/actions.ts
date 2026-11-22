@@ -13,5 +13,6 @@ export async function refreshWeek(weekStart: string): Promise<WeekData> {
     getBackend(),
     session.userId,
     resolveWeekStart(weekStart),
+    { force: true },
   );
 }

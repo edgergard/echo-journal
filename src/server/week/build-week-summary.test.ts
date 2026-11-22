@@ -1,8 +1,11 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Backend } from "@/contracts/backend";
 import type { Entry } from "@/contracts/journal";
-import { buildWeekData } from "@/server/week/build-week-summary";
+import {
+  buildWeekData,
+  clearWeekThemesCache,
+} from "@/server/week/build-week-summary";
 
 const WEEK = "2026-11-16";
 
@@ -54,6 +57,8 @@ function makeBackend(
 }
 
 describe("buildWeekData", () => {
+  beforeEach(() => clearWeekThemesCache());
+
   it("is empty with fewer than two entries and does not call the AI", async () => {
     const { backend, summarizeWeek, consume } = makeBackend([
       makeEntry(1, "2026-11-17T10:00:00.000Z"),
@@ -115,5 +120,60 @@ describe("buildWeekData", () => {
     const { backend } = makeBackend([...newer, ...inWeek], { pageSize: 2 });
     const { summary } = await buildWeekData(backend, "u", WEEK);
     expect(summary.entryCount).toBe(2);
+  });
+
+  const two = () => [
+    makeEntry(1, "2026-11-17T10:00:00.000Z"),
+    makeEntry(2, "2026-11-18T10:00:00.000Z"),
+  ];
+
+  it("serves a second view of the same week from cache without consuming", async () => {
+    const { backend, consume, summarizeWeek } = makeBackend(two());
+    await buildWeekData(backend, "u", WEEK);
+    const { summary } = await buildWeekData(backend, "u", WEEK);
+    expect(summary.status).toBe("done");
+    expect(summary.themes).toHaveLength(1);
+    expect(consume).toHaveBeenCalledOnce();
+    expect(summarizeWeek).toHaveBeenCalledOnce();
+  });
+
+  it("misses the cache when an entry was edited", async () => {
+    const first = makeBackend(two());
+    await buildWeekData(first.backend, "u", WEEK);
+    const edited = two().map((e) =>
+      e.id === "e1" ? { ...e, updatedAt: "2026-11-19T10:00:00.000Z" } : e,
+    );
+    const second = makeBackend(edited);
+    await buildWeekData(second.backend, "u", WEEK);
+    expect(second.consume).toHaveBeenCalledOnce();
+    expect(second.summarizeWeek).toHaveBeenCalledOnce();
+  });
+
+  it("regenerates and consumes on force", async () => {
+    const { backend, consume, summarizeWeek } = makeBackend(two());
+    await buildWeekData(backend, "u", WEEK);
+    await buildWeekData(backend, "u", WEEK, { force: true });
+    expect(consume).toHaveBeenCalledTimes(2);
+    expect(summarizeWeek).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps no cache entry after a failed AI call", async () => {
+    const ok = makeBackend(two());
+    await buildWeekData(ok.backend, "u", WEEK);
+    const failing = makeBackend(two(), { fail: true });
+    const forced = await buildWeekData(failing.backend, "u", WEEK, {
+      force: true,
+    });
+    expect(forced.summary.status).toBe("error");
+    const after = makeBackend(two());
+    await buildWeekData(after.backend, "u", WEEK);
+    expect(after.consume).toHaveBeenCalledOnce();
+  });
+
+  it("caches per user", async () => {
+    const { backend, consume } = makeBackend(two());
+    await buildWeekData(backend, "u", WEEK);
+    await buildWeekData(backend, "other", WEEK);
+    expect(consume).toHaveBeenCalledTimes(2);
   });
 });

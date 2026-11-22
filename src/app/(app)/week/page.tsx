@@ -29,14 +29,7 @@ function WeekFallback() {
   );
 }
 
-async function WeekContent({
-  searchParams,
-}: {
-  searchParams: PageProps<"/week">["searchParams"];
-}) {
-  const { week } = await searchParams;
-  const requested = Array.isArray(week) ? week[0] : week;
-  const weekStart = resolveWeekStart(requested);
+async function WeekContent({ weekStart }: { weekStart: string }) {
   const session = await requireSession(routes.week(weekStart));
   const backend = getBackend();
   const data = await buildWeekData(backend, session.userId, weekStart);
@@ -65,12 +58,28 @@ async function WeekContent({
   );
 }
 
+/** Resolves the week, then re-keys the inner boundary so navigation shows the loading state. */
+async function WeekRoute({
+  searchParams,
+}: {
+  searchParams: PageProps<"/week">["searchParams"];
+}) {
+  const { week } = await searchParams;
+  const requested = Array.isArray(week) ? week[0] : week;
+  const weekStart = resolveWeekStart(requested);
+  return (
+    <Suspense key={weekStart} fallback={<WeekFallback />}>
+      <WeekContent weekStart={weekStart} />
+    </Suspense>
+  );
+}
+
 export default function WeekPage(props: PageProps<"/week">) {
   return (
     <div className="mx-auto max-w-4xl">
       <h1 className="mb-2 font-heading text-4xl font-medium">This week</h1>
       <Suspense fallback={<WeekFallback />}>
-        <WeekContent searchParams={props.searchParams} />
+        <WeekRoute searchParams={props.searchParams} />
       </Suspense>
     </div>
   );
