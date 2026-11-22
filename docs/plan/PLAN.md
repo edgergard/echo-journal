@@ -74,7 +74,7 @@ CI needs none of these (demo mode).
 | 1-auth    | stream/1-auth    | src/app/page.tsx(+test), src/app/sign-in/**, src/app/auth/**, src/app/(app)/settings/**, src/proxy.ts(+test), src/server/auth/**, src/components/auth/**, src/components/settings/**, src/components/landing/** | 3101 | claude/claude-opus-5-5 · auto   | e429c983 | wks_ad278f649ad8dcef | running |     |
 | 1-entries | stream/1-entries | src/app/(app)/journal/** , src/server/entries/**, src/components/entries/**                                                                                                                                     | 3102 | claude/claude-sonnet-5-5 · auto | d190bb17 | wks_43af7e54ab8d649e | running |     |
 | 1-ai      | stream/1-ai      | src/app/api/reflect/**, src/server/ai/**, src/server/memory/**, src/server/reflections/**, src/server/usage/**, src/components/reflection/**                                                                    | 3103 | claude/claude-opus-5-5 · auto   | ff4516e1 | wks_9bafda538d0201f9 | running |     |
-| 1-week    | stream/1-week    | src/app/(app)/week/**, src/app/api/week/**, src/server/week/**, src/components/week/**                                                                                                                          | 3104 | claude/claude-sonnet-5-5 · auto | 025fd37b | wks_38e979a77109001b | running |     |
+| 1-week    | stream/1-week    | src/app/(app)/week/**, src/app/api/week/**, src/server/week/**, src/components/week/**                                                                                                                          | 3104 | claude/claude-sonnet-5-5 · auto | 025fd37b | wks_38e979a77109001b | fixing  |     |
 
 ### Wave 2
 
@@ -94,3 +94,4 @@ Retries: 0 · Failed streams: 0 · Escalations: 0 · Red dev fixes: 0 · Review 
 - 2026-11-22 plan drafted; Gate A approved (round 1)
 - 2026-11-22 repo created from template-nextjs-pet (b6f837a); foundation: tokens, Literata, deps, shadcn, contracts, demo backend + seed, stubs, migration, Playwright + CI e2e job
 - 2026-11-22 wave 1 launched from dev 4cba4b6 (4 streams, CLI mode, mode auto confirmed)
+- 2026-11-22 1-week reported done (PR #3); review: 2 findings (limit burn on every view, no loading on week change) sent back
