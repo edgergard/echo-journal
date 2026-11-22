@@ -18,7 +18,7 @@ GitHub remote `origin` (repo `edgergard/echo-journal`, public). Your branch is a
 
 ## Backend model (important)
 
-- Contracts you build against and must NOT modify: `src/contracts/**` (types, zod schemas, backend interfaces), `src/server/backend.ts` (`getBackend()` wiring), `src/server/demo/seed.ts`, `src/lib/routes.ts`, `src/env.ts`, `supabase/migrations/**`.
+- Contracts you build against and must NOT modify: `src/contracts/**` (types, zod schemas, backend interfaces), `src/server/backend.ts` (`getBackend()` wiring), `src/server/demo/**` (seed + shared in-memory store), `src/lib/routes.ts`, `src/env.ts`, `supabase/migrations/**`.
 - **Demo mode:** without Supabase env vars the app uses in-memory implementations seeded from `src/server/demo/seed.ts`; without `OPENROUTER_API_KEY` it uses a fake AI that streams canned text. Your feature must work fully in demo mode (CI and other agents have no keys). The real implementation (Supabase / OpenRouter) lives next to the in-memory one in your own folder; `getBackend()` already picks between them.
 - UI uses the shadcn components in `src/components/ui/**` and theme tokens (`bg-background`, `text-muted-foreground`, `bg-primary`, `font-heading`/`font-serif` for Literata) — never hard-coded hex.
 
@@ -31,6 +31,9 @@ GitHub remote `origin` (repo `edgergard/echo-journal`, public). Your branch is a
 ## Known pitfalls
 
 - Demo mode first: the in-memory backend and fake AI must keep working; never make a page require env vars (L-029).
+- **Cache Components are on:** `cookies()`, `headers()`, `params`, `searchParams` (and so `requireSession()` and `getBackend()` reads of user data) must run inside a `<Suspense>` boundary, or `next build` fails with a blocking-prerender error. Follow the stubs: the page renders a static heading and `<Suspense fallback={…}><AsyncContent /></Suspense>`; pass `props.params` / `props.searchParams` promises down and await them inside. Route segment config (`export const runtime`, `dynamic`, `revalidate`) is not allowed.
+- `route.ts` files may export only HTTP handlers; put schemas and helpers elsewhere (API schemas live in `src/contracts/api.ts`).
+- `src/app/(app)/layout.tsx` already renders the AppHeader and the page's `<main>`; app pages render their content only (no second `<main>`), one `h1` each.
 - `"use cache"` / `cacheLife()` only work inside Next.js; keep testable logic in plain functions (CLAUDE.md). Pages that read the session are dynamic — don't cache per-user data.
 
 ## You must NOT

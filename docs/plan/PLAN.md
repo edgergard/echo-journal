@@ -40,7 +40,8 @@ template-nextjs-pet (Next.js 16.4 App Router + Cache Components, React 19.3, Typ
 | OpenRouter models                                  | OPENROUTER_CHAT_MODEL, OPENROUTER_EMBEDDING_MODEL                                             | public (non-secret config, server-side) | defaults in src/env.ts                              | —                                   |
 | Limits                                             | AI_DAILY_LIMIT                                                                                | non-secret                              | default 10 in src/env.ts                            | —                                   |
 | Vercel (hosting)                                   | —                                                                                             | —                                       | Vercel project linked to the repo                   | user                                |
-| CI needs none of these (demo mode).                |
+
+CI needs none of these (demo mode).
 
 ## Contracts (created in foundation, owned by orchestrator)
 
@@ -49,7 +50,8 @@ template-nextjs-pet (Next.js 16.4 App Router + Cache Components, React 19.3, Typ
 | Domain types + zod schemas | src/contracts/journal.ts, src/contracts/session.ts                                                                                                                                | Mood, Entry, EntryInput, Reflection, RecalledRef, WeekSummary, Session                              |
 | Backend interfaces         | src/contracts/backend.ts                                                                                                                                                          | AuthService, EntriesRepo, ReflectionsRepo, MemoryStore, AiClient, UsageLimiter                      |
 | Backend wiring             | src/server/backend.ts                                                                                                                                                             | `getBackend()` picks in-memory / fake vs Supabase / OpenRouter by env                               |
-| Demo seed                  | src/server/demo/seed.ts                                                                                                                                                           | demo persona: 20 entries, reflections with recalled refs                                            |
+| Demo seed + store          | src/server/demo/seed.ts, src/server/demo/store.ts                                                                                                                                 | demo persona: 20 entries, reflections with recalled refs; shared in-memory store                    |
+| API schemas                | src/contracts/api.ts                                                                                                                                                              | request schemas + reply header names                                                                |
 | API surface                | src/app/api/reflect/route.ts (POST `{ entryId, regenerate? }` → text stream + `x-echo-status` header), src/app/api/week/route.ts (GET `?weekStart=YYYY-MM-DD` → WeekSummary JSON) | stubs; signatures fixed                                                                             |
 | DB schema                  | supabase/migrations/0001_init.sql                                                                                                                                                 | entries, reflections, entry_embeddings (vector 1536) + match_entries(), ai_usage; RLS by auth.uid() |
 | Route map                  | src/lib/routes.ts                                                                                                                                                                 | path helpers used by every stream                                                                   |
@@ -89,4 +91,5 @@ Retries: 0 · Failed streams: 0 · Escalations: 0 · Red dev fixes: 0 · Review 
 
 ## Log
 
-- 2026-11-22 plan drafted
+- 2026-11-22 plan drafted; Gate A approved (round 1)
+- 2026-11-22 repo created from template-nextjs-pet (b6f837a); foundation: tokens, Literata, deps, shadcn, contracts, demo backend + seed, stubs, migration, Playwright + CI e2e job

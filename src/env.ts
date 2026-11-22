@@ -8,7 +8,18 @@ const serverSchema = z.object({
   NODE_ENV: z
     .enum(["development", "test", "production"])
     .default("development"),
-  // DATABASE_URL: z.url(),
+  // Every service variable is optional: without them the app runs in demo
+  // mode (in-memory backend, fake AI) — see src/server/backend.ts.
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
+  DEMO_USER_EMAIL: z.email().optional(),
+  DEMO_USER_PASSWORD: z.string().min(1).optional(),
+  OPENROUTER_API_KEY: z.string().min(1).optional(),
+  OPENROUTER_CHAT_MODEL: z.string().min(1).default("openai/gpt-4.1-mini"),
+  OPENROUTER_EMBEDDING_MODEL: z
+    .string()
+    .min(1)
+    .default("openai/text-embedding-3-small"),
+  AI_DAILY_LIMIT: z.coerce.number().int().positive().default(10),
 });
 
 /**
@@ -17,6 +28,11 @@ const serverSchema = z.object({
  */
 const clientSchema = z.object({
   NEXT_PUBLIC_APP_NAME: z.string().min(1).default("Echo Journal"),
+  NEXT_PUBLIC_SUPABASE_URL: z.url().optional(),
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1).optional(),
+  NEXT_PUBLIC_REPO_URL: z
+    .url()
+    .default("https://github.com/edgergard/echo-journal"),
 });
 
 /**
@@ -26,6 +42,9 @@ const clientSchema = z.object({
  */
 const clientValues = {
   NEXT_PUBLIC_APP_NAME: process.env.NEXT_PUBLIC_APP_NAME,
+  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  NEXT_PUBLIC_REPO_URL: process.env.NEXT_PUBLIC_REPO_URL,
 } satisfies Record<keyof z.input<typeof clientSchema>, string | undefined>;
 
 type ServerEnv = z.output<typeof serverSchema>;

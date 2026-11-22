@@ -43,7 +43,11 @@
       "Bash(npx playwright cli *)",
       "PowerShell(npx playwright cli *)",
       "Bash(npx next start --port *)",
-      "PowerShell(npx next start --port *)"
+      "PowerShell(npx next start --port *)",
+      "Bash(npm run e2e*)",
+      "PowerShell(npm run e2e*)",
+      "Bash(npx playwright test*)",
+      "PowerShell(npx playwright test*)"
     ],
     "deny": [
       "Read(./.env)",

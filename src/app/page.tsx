@@ -1,42 +1,27 @@
-import { CopyCommand } from "@/components/copy-command";
-import { siteConfig } from "@/lib/site-config";
+import { redirect } from "next/navigation";
 
-export default function HomePage() {
+import { Button } from "@/components/ui/button";
+import { routes } from "@/lib/routes";
+import { getBackend } from "@/server/backend";
+
+/** Stub landing — stream 1-auth builds the real one (design.md: landing). */
+async function tryDemo() {
+  "use server";
+  const result = await getBackend().auth.signInDemo();
+  if (result.ok) redirect(routes.journal);
+}
+
+export default function LandingPage() {
   return (
-    <main className="mx-auto flex min-h-dvh max-w-2xl flex-col justify-center gap-10 px-6 py-16">
-      <header className="space-y-3">
-        <h1 className="text-4xl font-semibold tracking-tight">
-          {siteConfig.name}
-        </h1>
-        <p className="text-lg text-muted-foreground">
-          {siteConfig.description}
-        </p>
-      </header>
-
-      <section aria-labelledby="next-steps" className="space-y-3">
-        <h2 id="next-steps" className="text-xl font-medium">
-          Next steps
-        </h2>
-        <p>
-          Edit <code className="font-mono text-sm">src/app/page.tsx</code>, then
-          run every check before committing:
-        </p>
-        <CopyCommand command="npm run check" />
-      </section>
-
-      {process.env.NODE_ENV === "development" && (
-        <p>
-          Scripts, project structure and conventions are described in the{" "}
-          {/* A plain <a>: /readme is a dev-only Route Handler (text/plain), not a page. */}
-          <a
-            href="/readme"
-            className="font-medium underline underline-offset-4"
-          >
-            README
-          </a>
-          .
-        </p>
-      )}
+    <main className="mx-auto flex min-h-dvh max-w-2xl flex-col justify-center gap-6 px-6 py-16">
+      <h1 className="font-heading text-5xl font-medium">
+        A journal that remembers.
+      </h1>
+      <form action={tryDemo}>
+        <Button type="submit" size="lg">
+          Try the demo
+        </Button>
+      </form>
     </main>
   );
 }
