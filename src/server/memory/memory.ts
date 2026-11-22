@@ -9,41 +9,203 @@ const STOP_WORDS = new Set([
   "after",
   "again",
   "all",
+  "almost",
+  "also",
+  "always",
   "and",
+  "another",
+  "any",
   "are",
+  "aren",
+  "around",
+  "back",
   "been",
   "before",
+  "being",
   "but",
+  "can",
+  "could",
+  "couldn",
+  "day",
+  "did",
+  "didn",
+  "does",
+  "doing",
+  "don",
+  "down",
+  "even",
+  "ever",
+  "every",
+  "everyone",
+  "everything",
+  "feel",
+  "felt",
+  "few",
+  "finally",
+  "first",
   "for",
   "from",
+  "get",
+  "got",
   "had",
   "has",
+  "hasn",
   "have",
+  "haven",
+  "her",
+  "him",
+  "his",
+  "how",
+  "into",
+  "isn",
+  "its",
   "just",
+  "keep",
+  "kept",
+  "know",
+  "last",
+  "like",
+  "little",
+  "long",
+  "lot",
+  "made",
+  "make",
+  "many",
+  "maybe",
+  "more",
+  "most",
+  "much",
+  "myself",
+  "need",
+  "never",
+  "new",
+  "next",
   "not",
+  "nothing",
+  "now",
+  "off",
+  "once",
+  "one",
+  "only",
+  "other",
+  "our",
   "out",
+  "over",
+  "really",
+  "said",
+  "same",
+  "second",
   "she",
+  "should",
+  "shouldn",
+  "some",
+  "someone",
+  "something",
+  "spent",
+  "started",
+  "still",
+  "tell",
+  "than",
   "that",
   "the",
+  "their",
   "them",
   "then",
+  "there",
+  "these",
   "they",
+  "thing",
+  "things",
+  "think",
   "this",
+  "time",
+  "today",
+  "tomorrow",
+  "tonight",
+  "too",
+  "very",
+  "want",
   "was",
+  "wasn",
+  "way",
+  "well",
+  "went",
   "were",
+  "weren",
   "what",
+  "when",
+  "where",
+  "which",
+  "while",
+  "who",
+  "why",
+  "will",
   "with",
+  "won",
+  "would",
+  "wouldn",
+  "yesterday",
+  "yet",
   "you",
+  "your",
 ]);
 
-/** Lower-cased content words of a text. */
+/** A light suffix stripper so "letters"/"letter" and "packing"/"packed" meet. */
+export function stem(word: string): string {
+  for (const suffix of ["ing", "ed", "es", "s"]) {
+    if (word.endsWith(suffix) && word.length - suffix.length >= 3) {
+      const base = word.slice(0, -suffix.length);
+      // "stopped" → "stop", "running" → "run"
+      const last = base.at(-1);
+      return last && base.at(-2) === last && !"aeiouls".includes(last)
+        ? base.slice(0, -1)
+        : base;
+    }
+  }
+  return word;
+}
+
+/**
+ * A few stems that mean the same thing in a journal — a tiny stand-in for
+ * what real embeddings capture (keys and values are stems).
+ */
+const CONCEPTS: Record<string, string> = {
+  grandmother: "grandma",
+  granny: "grandma",
+  gran: "grandma",
+  father: "dad",
+  mother: "mum",
+  mom: "mum",
+  job: "work",
+  offer: "work",
+  interview: "work",
+  application: "work",
+  career: "work",
+  office: "work",
+  colleague: "work",
+  boss: "work",
+  mov: "move",
+  apartment: "flat",
+  slept: "sleep",
+  insomnia: "sleep",
+  jog: "run",
+  ran: "run",
+};
+
+const toConcept = (word: string) => CONCEPTS[word] ?? word;
+
+/** Stemmed, lower-cased content words of a text. */
 export function contentWords(text: string): Set<string> {
   return new Set(
     text
       .toLowerCase()
+      .replace(/[‘’ʼ]/g, "'")
+      .replace(/'s\b/g, "")
       .replace(/[^\p{L}\s]/gu, " ")
       .split(/\s+/)
-      .filter((w) => w.length > 2 && !STOP_WORDS.has(w)),
+      .filter((w) => w.length > 2 && !STOP_WORDS.has(w))
+      .map((w) => toConcept(stem(w)))
+      .filter((w) => !STOP_WORDS.has(w)),
   );
 }
 
@@ -57,6 +219,26 @@ export function wordOverlap(a: string, b: string): number {
   return shared / (wa.size + wb.size - shared);
 }
 
+/**
+ * Ranks `candidates` older than `entry` (excluding it) by word overlap,
+ * most similar first; ties go to the more recent entry. Pure, for tests.
+ */
+export function rankBySimilarity(
+  entry: Entry,
+  candidates: Entry[],
+  k: number,
+): SimilarEntry[] {
+  return candidates
+    .filter((e) => e.id !== entry.id && e.createdAt < entry.createdAt)
+    .map((e) => ({ entry: e, score: wordOverlap(entry.text, e.text) }))
+    .filter((s) => s.score > 0)
+    .sort(
+      (a, b) =>
+        b.score - a.score || b.entry.createdAt.localeCompare(a.entry.createdAt),
+    )
+    .slice(0, Math.max(k, 0));
+}
+
 /** Demo-mode memory: word-overlap similarity over the user's older entries. */
 export class MemoryMemoryStore implements MemoryStore {
   async index(): Promise<void> {
@@ -68,13 +250,7 @@ export class MemoryMemoryStore implements MemoryStore {
     entry: Entry,
     k: number,
   ): Promise<SimilarEntry[]> {
-    const all = getDemoStore().entries.get(userId) ?? [];
-    return all
-      .filter((e) => e.id !== entry.id && e.createdAt < entry.createdAt)
-      .map((e) => ({ entry: e, score: wordOverlap(entry.text, e.text) }))
-      .filter((s) => s.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, k);
+    return rankBySimilarity(entry, getDemoStore().entries.get(userId) ?? [], k);
   }
 
   async remove(userId: string, entryId: string): Promise<void> {
