@@ -17,7 +17,11 @@ async function expectNoSeriousViolations(page: Page) {
 
 for (const colorScheme of ["light", "dark"] as const) {
   test.describe(`axe (${colorScheme})`, () => {
-    test.use({ colorScheme });
+    // Reduced motion: axe must see final colors, not a fade-in mid-animation
+    // (the recalled notes fade in and failed color-contrast on slow CI runners).
+    test.use({ colorScheme, reducedMotion: "reduce" });
+    // Five axe passes per test: well over the 30s default on slow machines.
+    test.describe.configure({ timeout: 90_000 });
 
     test("landing and sign-in", async ({ page }) => {
       await page.goto("/");

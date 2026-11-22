@@ -52,7 +52,7 @@ npm run dev     # http://localhost:3000
 - OpenRouter: `OPENROUTER_API_KEY`, `OPENROUTER_CHAT_MODEL`, `OPENROUTER_EMBEDDING_MODEL`
 - Limits: `AI_DAILY_LIMIT` (default 10)
 
-The production chat model is an OpenRouter `:free` model, and replies are capped per day to keep costs near zero.
+To keep running costs near zero, set `OPENROUTER_CHAT_MODEL` to an OpenRouter `:free` model in production (the app default is a small paid model). Each user gets `AI_DAILY_LIMIT` AI calls per day (default 10, shared by replies and week summaries), replies are capped at about 250 tokens, and a rate-limited free model shows "Echo is busy" without using the quota. Embeddings cost fractions of a cent.
 
 ## Tests
 

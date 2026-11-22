@@ -4,7 +4,8 @@ import { expect, type Page } from "@playwright/test";
 export async function startDemo(page: Page): Promise<void> {
   await page.goto("/");
   await page.getByRole("button", { name: "Try the demo" }).click();
-  await expect(page).toHaveURL(/\/journal$/);
+  // The first server action after a cold `next start` can be slow.
+  await expect(page).toHaveURL(/\/journal$/, { timeout: 20_000 });
   await expect(
     page.getByRole("heading", { level: 1, name: "Journal" }),
   ).toBeVisible();
