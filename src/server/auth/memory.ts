@@ -6,7 +6,9 @@ import type { AuthResult, AuthService } from "@/contracts/backend";
 import { DEMO_USER_ID, type Session } from "@/contracts/session";
 import { resetDemoStore } from "@/server/demo/store";
 
-export const DEMO_SESSION_COOKIE = "echo_demo_session";
+import { DEMO_SESSION_COOKIE, DEMO_SESSION_VALUE } from "./demo-cookie";
+
+export { DEMO_SESSION_COOKIE } from "./demo-cookie";
 
 const NOT_CONFIGURED: AuthResult = { ok: false, reason: "not-configured" };
 
@@ -17,13 +19,15 @@ const NOT_CONFIGURED: AuthResult = { ok: false, reason: "not-configured" };
 export class MemoryAuthService implements AuthService {
   async getSession(): Promise<Session | null> {
     const store = await cookies();
-    if (store.get(DEMO_SESSION_COOKIE)?.value !== "1") return null;
+    if (store.get(DEMO_SESSION_COOKIE)?.value !== DEMO_SESSION_VALUE) {
+      return null;
+    }
     return { userId: DEMO_USER_ID, email: null, isDemo: true };
   }
 
   async signInDemo(): Promise<AuthResult> {
     const store = await cookies();
-    store.set(DEMO_SESSION_COOKIE, "1", {
+    store.set(DEMO_SESSION_COOKIE, DEMO_SESSION_VALUE, {
       httpOnly: true,
       sameSite: "lax",
       path: "/",

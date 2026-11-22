@@ -1,12 +1,63 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { Suspense } from "react";
+
+import { AuthForm } from "@/components/auth/auth-form";
+import { Skeleton } from "@/components/ui/skeleton";
+import { routes } from "@/lib/routes";
+import {
+  sendEmailLinkAction,
+  signInDemoAction,
+  signInWithGitHubAction,
+} from "@/server/auth/actions";
+
+import { parseSignInParams } from "./sign-in-params";
 
 export const metadata: Metadata = { title: "Sign in" };
 
-/** Stub — stream 1-auth builds it (design.md: sign-in). */
-export default function SignInPage() {
+async function SignInForm({
+  searchParams,
+}: {
+  searchParams: PageProps<"/sign-in">["searchParams"];
+}) {
+  const { next, callbackFailed } = parseSignInParams(await searchParams);
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-6 px-6 py-16">
-      <h1 className="font-heading text-3xl font-medium">Sign in to Echo</h1>
+    <AuthForm
+      next={next}
+      callbackFailed={callbackFailed}
+      sendEmailLink={sendEmailLinkAction}
+      signInWithGitHub={signInWithGitHubAction}
+      signInDemo={signInDemoAction}
+    />
+  );
+}
+
+function SignInFormSkeleton() {
+  return (
+    <div aria-hidden="true" className="flex flex-col gap-4">
+      <Skeleton className="h-4 w-12" />
+      <Skeleton className="h-11 w-full" />
+      <Skeleton className="h-11 w-full" />
+      <Skeleton className="mt-6 h-11 w-full" />
+    </div>
+  );
+}
+
+export default function SignInPage(props: PageProps<"/sign-in">) {
+  return (
+    <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-8 px-6 py-12 sm:py-16">
+      <Link
+        href={routes.landing}
+        className="self-start font-heading text-2xl font-semibold text-foreground"
+      >
+        Echo
+      </Link>
+      <h1 className="font-heading text-3xl font-medium tracking-tight sm:text-4xl">
+        Sign in to Echo
+      </h1>
+      <Suspense fallback={<SignInFormSkeleton />}>
+        <SignInForm searchParams={props.searchParams} />
+      </Suspense>
     </main>
   );
 }
