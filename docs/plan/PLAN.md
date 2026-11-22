@@ -1,6 +1,6 @@
 # Echo Journal — build plan
 
-Status: wave-1 running
+Status: wave-1 integrating
 Orchestrator launch mode: CLI
 Merge method: GitHub PR into dev
 Repo: C:\Projects\echo-journal Remote: https://github.com/edgergard/echo-journal Visibility: public
@@ -69,12 +69,12 @@ CI needs none of these (demo mode).
 
 ### Wave 1
 
-| Stream    | Branch           | Owns (only these paths)                                                                                                                                                                                         | Port | Provider/profile · mode         | Agent ID | Workspace ID         | Status  | PR  |
-| --------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- | ------------------------------- | -------- | -------------------- | ------- | --- |
-| 1-auth    | stream/1-auth    | src/app/page.tsx(+test), src/app/sign-in/**, src/app/auth/**, src/app/(app)/settings/**, src/proxy.ts(+test), src/server/auth/**, src/components/auth/**, src/components/settings/**, src/components/landing/** | 3101 | claude/claude-opus-5-5 · auto   | e429c983 | wks_ad278f649ad8dcef | running |     |
-| 1-entries | stream/1-entries | src/app/(app)/journal/** , src/server/entries/**, src/components/entries/**                                                                                                                                     | 3102 | claude/claude-sonnet-5-5 · auto | d190bb17 | wks_43af7e54ab8d649e | running |     |
-| 1-ai      | stream/1-ai      | src/app/api/reflect/**, src/server/ai/**, src/server/memory/**, src/server/reflections/**, src/server/usage/**, src/components/reflection/**                                                                    | 3103 | claude/claude-opus-5-5 · auto   | ff4516e1 | wks_9bafda538d0201f9 | running |     |
-| 1-week    | stream/1-week    | src/app/(app)/week/**, src/app/api/week/**, src/server/week/**, src/components/week/**                                                                                                                          | 3104 | claude/claude-sonnet-5-5 · auto | 025fd37b | wks_38e979a77109001b | fixing  |     |
+| Stream    | Branch           | Owns (only these paths)                                                                                                                                                                                         | Port | Provider/profile · mode         | Agent ID | Workspace ID         | Status | PR  |
+| --------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- | ------------------------------- | -------- | -------------------- | ------ | --- |
+| 1-auth    | stream/1-auth    | src/app/page.tsx(+test), src/app/sign-in/**, src/app/auth/**, src/app/(app)/settings/**, src/proxy.ts(+test), src/server/auth/**, src/components/auth/**, src/components/settings/**, src/components/landing/** | 3101 | claude/claude-opus-5-5 · auto   | e429c983 | wks_ad278f649ad8dcef | fixing | #5  |
+| 1-entries | stream/1-entries | src/app/(app)/journal/** , src/server/entries/**, src/components/entries/**                                                                                                                                     | 3102 | claude/claude-sonnet-5-5 · auto | d190bb17 | wks_43af7e54ab8d649e | merged | #4  |
+| 1-ai      | stream/1-ai      | src/app/api/reflect/**, src/server/ai/**, src/server/memory/**, src/server/reflections/**, src/server/usage/**, src/components/reflection/**                                                                    | 3103 | claude/claude-opus-5-5 · auto   | ff4516e1 | wks_9bafda538d0201f9 | fixing | #6  |
+| 1-week    | stream/1-week    | src/app/(app)/week/**, src/app/api/week/**, src/server/week/**, src/components/week/**                                                                                                                          | 3104 | claude/claude-sonnet-5-5 · auto | 025fd37b | wks_38e979a77109001b | merged | #3  |
 
 ### Wave 2
 
@@ -87,7 +87,7 @@ Status values: pending · running · permission · escalation · done (report in
 ## Metrics
 
 Gate A approved: 2026-11-22 · Gate A rounds: 1
-Retries: 0 · Failed streams: 0 · Escalations: 0 · Red dev fixes: 0 · Review findings fixed: 0 · User corrections: 0
+Retries: 0 · Failed streams: 0 · Escalations: 0 · Red dev fixes: 0 · Review findings fixed: 5 · User corrections: 0
 
 ## Log
 
@@ -95,3 +95,8 @@ Retries: 0 · Failed streams: 0 · Escalations: 0 · Red dev fixes: 0 · Review 
 - 2026-11-22 repo created from template-nextjs-pet (b6f837a); foundation: tokens, Literata, deps, shadcn, contracts, demo backend + seed, stubs, migration, Playwright + CI e2e job
 - 2026-11-22 wave 1 launched from dev 4cba4b6 (4 streams, CLI mode, mode auto confirmed)
 - 2026-11-22 1-week reported done (PR #3); review: 2 findings (limit burn on every view, no loading on week change) sent back
+- 2026-11-22 1-week merged (#3 → 914290c); review fixed: limit burn on every view (in-process theme cache), loading state on week change
+- 2026-11-22 1-entries merged (#4 → 5f7a8be); review fixed: logged swallowed errors, 'Echo replied' in card label, ?saved=1 dropped after announce
+- 2026-11-22 contract fix on dev c1c3cce: safeNextPath rejected backslash/control-char open redirects (found in 1-auth review)
+- 2026-11-22 1-auth (#5) sent back: integrate c1c3cce + malicious-next tests, log swallowed errors
+- 2026-11-22 1-ai (#6) sent back: duplicate in-flight generation, crisis card independent of save, keep reply on regenerate limit

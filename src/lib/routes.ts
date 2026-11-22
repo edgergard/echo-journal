@@ -19,10 +19,23 @@ export const routes = {
 /** Paths that need a session (the proxy and pages both check). */
 export const PROTECTED_PREFIXES = ["/journal", "/week", "/settings"] as const;
 
-/** Only same-origin relative paths are allowed as a post-sign-in target. */
+const PROBE_ORIGIN = "http://same-origin.invalid";
+
+/**
+ * Only same-origin relative paths are allowed as a post-sign-in target.
+ * Rejects backslashes and control characters (browsers treat `\` as `/` and
+ * strip tabs/newlines, so `/\evil.com` would leave the site), then confirms
+ * the parsed URL keeps our origin. Returns the normalized path.
+ */
 export function safeNextPath(next: string | null | undefined): string {
-  if (!next || !next.startsWith("/") || next.startsWith("//")) {
+  if (!next || !next.startsWith("/") || /[\\\u0000-\u001f\u007f]/.test(next)) {
     return routes.journal;
   }
-  return next;
+  try {
+    const url = new URL(next, PROBE_ORIGIN);
+    if (url.origin !== PROBE_ORIGIN) return routes.journal;
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return routes.journal;
+  }
 }
