@@ -4,32 +4,27 @@ import { Suspense } from "react";
 
 import { AuthForm } from "@/components/auth/auth-form";
 import { Skeleton } from "@/components/ui/skeleton";
-import { routes, safeNextPath } from "@/lib/routes";
+import { routes } from "@/lib/routes";
 import {
   sendEmailLinkAction,
   signInDemoAction,
   signInWithGitHubAction,
 } from "@/server/auth/actions";
 
+import { parseSignInParams } from "./sign-in-params";
+
 export const metadata: Metadata = { title: "Sign in" };
-
-/** /auth/callback adds `?error=callback` when it can't finish a sign-in. */
-const CALLBACK_ERROR = "callback";
-
-function firstValue(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value;
-}
 
 async function SignInForm({
   searchParams,
 }: {
   searchParams: PageProps<"/sign-in">["searchParams"];
 }) {
-  const params = await searchParams;
+  const { next, callbackFailed } = parseSignInParams(await searchParams);
   return (
     <AuthForm
-      next={safeNextPath(firstValue(params.next))}
-      callbackFailed={firstValue(params.error) === CALLBACK_ERROR}
+      next={next}
+      callbackFailed={callbackFailed}
       sendEmailLink={sendEmailLinkAction}
       signInWithGitHub={signInWithGitHubAction}
       signInDemo={signInDemoAction}

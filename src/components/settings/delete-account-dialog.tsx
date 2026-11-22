@@ -1,6 +1,7 @@
 "use client";
 
 import { Trash2 } from "lucide-react";
+import { unstable_rethrow } from "next/navigation";
 import { useId, useState, useTransition } from "react";
 
 import { PendingLabel } from "@/components/auth/pending-label";
@@ -41,7 +42,10 @@ export function DeleteAccountDialog({ action }: { action: SettingsAction }) {
       try {
         const result = await action();
         if (!result.ok) setFailed(true);
-      } catch {
+      } catch (error) {
+        // Let Next.js handle a redirect() from the action.
+        unstable_rethrow(error);
+        console.error("[auth] deleteAccount failed", error);
         setFailed(true);
       }
     });

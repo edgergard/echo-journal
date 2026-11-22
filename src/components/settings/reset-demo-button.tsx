@@ -1,6 +1,7 @@
 "use client";
 
 import { RotateCcw } from "lucide-react";
+import { unstable_rethrow } from "next/navigation";
 import { useId, useState, useTransition } from "react";
 
 import { PendingLabel } from "@/components/auth/pending-label";
@@ -22,7 +23,10 @@ export function ResetDemoButton({ action }: { action: SettingsAction }) {
       try {
         const result = await action();
         setOutcome(result.ok ? "done" : "failed");
-      } catch {
+      } catch (error) {
+        // Let Next.js handle a redirect() from the action.
+        unstable_rethrow(error);
+        console.error("[auth] resetDemo failed", error);
         setOutcome("failed");
       }
     });

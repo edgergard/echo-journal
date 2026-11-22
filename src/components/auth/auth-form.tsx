@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { unstable_rethrow } from "next/navigation";
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 
@@ -87,7 +88,8 @@ export function AuthForm({
       } else if (result.status === "not-configured") {
         setNotice(AUTH_COPY.notConfigured);
       } else setError(AUTH_COPY.sendFailed);
-    } catch {
+    } catch (error) {
+      console.error("[auth] sendEmailLink failed", error);
       setError(AUTH_COPY.sendFailed);
     }
   });
@@ -102,7 +104,10 @@ export function AuthForm({
         if (result.status === "not-configured") {
           setNotice(AUTH_COPY.notConfigured);
         } else setError(AUTH_COPY.gitHubFailed);
-      } catch {
+      } catch (error) {
+        // The success path is a redirect() to GitHub: let Next.js handle it.
+        unstable_rethrow(error);
+        console.error("[auth] signInWithGitHub failed", error);
         setError(AUTH_COPY.gitHubFailed);
       }
     });

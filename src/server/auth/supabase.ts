@@ -9,6 +9,7 @@ import { routes, safeNextPath } from "@/lib/routes";
 import { buildDemoSeed } from "@/server/demo/seed";
 
 import { buildDemoRows } from "./demo-rows";
+import { logAuthError } from "./log";
 import { getRequestOrigin } from "./origin";
 import {
   createSupabaseAdminClient,
@@ -58,7 +59,9 @@ export class SupabaseAuthService implements AuthService {
       email,
       password,
     });
-    return error ? FAILED : OK;
+    if (!error) return OK;
+    logAuthError("signInDemo", error);
+    return FAILED;
   }
 
   async signInWithEmail(email: string, next: string): Promise<AuthResult> {
@@ -68,6 +71,7 @@ export class SupabaseAuthService implements AuthService {
       options: { emailRedirectTo: await callbackUrl(next) },
     });
     if (!error) return OK;
+    logAuthError("signInWithEmail", error);
     return error.status === 400 || error.status === 422 ? INVALID : FAILED;
   }
 
@@ -83,20 +87,27 @@ export class SupabaseAuthService implements AuthService {
         skipBrowserRedirect: true,
       },
     });
-    if (error || !data.url) return { ok: false, reason: "failed" };
+    if (error || !data.url) {
+      logAuthError("signInWithGitHub", error ?? new Error("No provider URL"));
+      return { ok: false, reason: "failed" };
+    }
     return { ok: true, url: data.url };
   }
 
   async exchangeCode(code: string): Promise<AuthResult> {
     const supabase = await createSupabaseServerClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    return error ? FAILED : OK;
+    if (!error) return OK;
+    logAuthError("exchangeCode", error);
+    return FAILED;
   }
 
   async signOut(): Promise<void> {
     const supabase = await createSupabaseServerClient();
     // "local": the demo account is shared, so never revoke other visitors' sessions.
-    await supabase.auth.signOut({ scope: "local" });
+    const { error } = await supabase.auth.signOut({ scope: "local" });
+    // The local session is cleared even when revoking the token fails.
+    if (error) logAuthError("signOut", error);
     // Belt and braces: drop any auth cookie the client left behind.
     const store = await cookies();
     for (const cookie of store.getAll()) {
@@ -110,8 +121,16 @@ export class SupabaseAuthService implements AuthService {
     const admin = createSupabaseAdminClient();
     // Every table references auth.users on delete cascade.
     const { error } = await admin.auth.admin.deleteUser(session.userId);
-    if (error) return FAILED;
-    await this.signOut();
+    if (error) {
+      logAuthError("deleteAccount deleteUser", error);
+      return FAILED;
+    }
+    try {
+      await this.signOut();
+    } catch (signOutError) {
+      // The account is gone either way; stale cookies fail validation.
+      logAuthError("deleteAccount signOut", signOutError);
+    }
     return OK;
   }
 
@@ -129,13 +148,24 @@ export class SupabaseAuthService implements AuthService {
       admin.from("entries").delete().eq("user_id", userId),
       admin.from("ai_usage").delete().eq("user_id", userId),
     ]);
-    if (cleared.some((result) => result.error)) return FAILED;
+    const clearError = cleared.find((result) => result.error)?.error;
+    if (clearError) {
+      logAuthError("resetDemo clear", clearError);
+      return FAILED;
+    }
 
     const entries = await admin.from("entries").insert(rows.entries);
-    if (entries.error) return FAILED;
+    if (entries.error) {
+      logAuthError("resetDemo insert entries", entries.error);
+      return FAILED;
+    }
     const reflections = await admin
       .from("reflections")
       .insert(rows.reflections);
-    return reflections.error ? FAILED : OK;
+    if (reflections.error) {
+      logAuthError("resetDemo insert reflections", reflections.error);
+      return FAILED;
+    }
+    return OK;
   }
 }

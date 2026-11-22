@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DEMO_USER_ID, type Session } from "@/contracts/session";
 import { resetDemoStoreForTests } from "@/server/demo/store";
@@ -49,6 +49,10 @@ async function renderSettings(
 describe("SettingsView", () => {
   beforeEach(() => {
     resetDemoStoreForTests();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it("renders the demo account with reset and without delete", async () => {
@@ -133,5 +137,25 @@ describe("SettingsView", () => {
       "Couldn't delete your account. Try again.",
     );
     expect(deleteAccount).toHaveBeenCalledOnce();
+  });
+
+  it("logs a failed sign-out request and tells the user", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const signOut = vi.fn<SettingsAction>(async () => {
+      throw new Error("Failed to fetch");
+    });
+    await renderSettings(
+      demoSession,
+      new MemoryUsageLimiter(10),
+      actions({ signOut }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Couldn't sign you out. Try again.",
+    );
+    expect(log).toHaveBeenCalledWith(
+      "[auth] signOut failed",
+      expect.any(Error),
+    );
   });
 });

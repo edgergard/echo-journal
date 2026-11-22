@@ -16,6 +16,8 @@ import type { SettingsActionResult } from "@/components/settings/settings-types"
 import { routes, safeNextPath } from "@/lib/routes";
 import { getBackend } from "@/server/backend";
 
+import { logAuthError } from "./log";
+
 const NextInputSchema = z.object({ next: z.string().optional() });
 const EmailLinkInputSchema = EmailSignInSchema.extend(NextInputSchema.shape);
 
@@ -26,14 +28,16 @@ export async function signInDemoAction(
   _state: DemoSignInState,
   formData: FormData,
 ): Promise<DemoSignInState> {
-  const next = formData.get("next");
+  const rawNext = formData.get("next");
+  const next = safeNextPath(typeof rawNext === "string" ? rawNext : null);
   try {
     const result = await getBackend().auth.signInDemo();
     if (!result.ok) return { status: "error" };
-  } catch {
+  } catch (error) {
+    logAuthError("signInDemo", error);
     return { status: "error" };
   }
-  redirect(safeNextPath(typeof next === "string" ? next : null));
+  redirect(next);
 }
 
 /** "Email me a link": sends a magic link that lands on /auth/callback. */
@@ -52,7 +56,8 @@ export async function sendEmailLinkAction(
     return result.reason === "not-configured"
       ? { status: "not-configured" }
       : { status: "error" };
-  } catch {
+  } catch (error) {
+    logAuthError("sendEmailLink", error);
     return { status: "error" };
   }
 }
@@ -72,7 +77,8 @@ export async function signInWithGitHubAction(
         : { status: "error" };
     }
     url = result.url;
-  } catch {
+  } catch (error) {
+    logAuthError("signInWithGitHub", error);
     return { status: "error" };
   }
   redirect(url);
@@ -81,7 +87,8 @@ export async function signInWithGitHubAction(
 export async function signOutAction(): Promise<SettingsActionResult> {
   try {
     await getBackend().auth.signOut();
-  } catch {
+  } catch (error) {
+    logAuthError("signOut", error);
     return FAILED;
   }
   redirect(routes.landing);
@@ -95,7 +102,8 @@ export async function deleteAccountAction(): Promise<SettingsActionResult> {
     if (!session || session.isDemo) return FAILED;
     const result = await auth.deleteAccount(session);
     if (!result.ok) return FAILED;
-  } catch {
+  } catch (error) {
+    logAuthError("deleteAccount", error);
     return FAILED;
   }
   redirect(routes.landing);
@@ -109,7 +117,8 @@ export async function resetDemoAction(): Promise<SettingsActionResult> {
     if (!session?.isDemo) return FAILED;
     const result = await auth.resetDemo(session);
     if (!result.ok) return FAILED;
-  } catch {
+  } catch (error) {
+    logAuthError("resetDemo", error);
     return FAILED;
   }
   // Re-render the page so "Replies left today" shows the reset count.

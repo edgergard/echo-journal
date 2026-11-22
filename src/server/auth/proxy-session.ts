@@ -6,6 +6,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { env } from "@/env";
 
 import { DEMO_SESSION_COOKIE, DEMO_SESSION_VALUE } from "./demo-cookie";
+import { logAuthError } from "./log";
 
 export interface ProxySession {
   signedIn: boolean;
@@ -57,7 +58,8 @@ export async function readProxySession(
     // Validates the JWT and refreshes an expiring session (via setAll).
     const { data } = await supabase.auth.getClaims();
     return { signedIn: Boolean(data?.claims), response };
-  } catch {
+  } catch (error) {
+    logAuthError("proxy getClaims", error);
     return { signedIn: false, response };
   }
 }

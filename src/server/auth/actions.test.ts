@@ -1,7 +1,8 @@
 // @vitest-environment node
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DEMO_USER_ID } from "@/contracts/session";
+import { getBackend } from "@/server/backend";
 import { getDemoStore, resetDemoStoreForTests } from "@/server/demo/store";
 
 import {
@@ -34,10 +35,54 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("next/cache", () => ({ refresh: vi.fn() }));
 
+const UNSAFE_NEXT = ["/\\evil.com", "//evil.com", "https://evil.com"];
+
 describe("auth actions (demo mode)", () => {
   beforeEach(() => {
     jar.clear();
     resetDemoStoreForTests();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it.each(UNSAFE_NEXT)(
+    "sends the demo sign-in with next=%s to the journal",
+    async (next) => {
+      const form = new FormData();
+      form.set("next", next);
+      await expect(signInDemoAction({ status: "idle" }, form)).rejects.toThrow(
+        /^REDIRECT \/journal$/,
+      );
+    },
+  );
+
+  it.each(UNSAFE_NEXT)(
+    "passes only a safe next to email and GitHub sign-in (next=%s)",
+    async (next) => {
+      const auth = getBackend().auth;
+      const email = vi.spyOn(auth, "signInWithEmail");
+      const gitHub = vi.spyOn(auth, "signInWithGitHub");
+      await sendEmailLinkAction({ email: "sam@example.com", next });
+      await signInWithGitHubAction({ next });
+      expect(email).toHaveBeenCalledWith("sam@example.com", "/journal");
+      expect(gitHub).toHaveBeenCalledWith("/journal");
+    },
+  );
+
+  it("logs a thrown error and keeps the user-facing result", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(getBackend().auth, "signInDemo").mockRejectedValue(
+      new Error("store down"),
+    );
+    expect(await signInDemoAction({ status: "idle" }, new FormData())).toEqual({
+      status: "error",
+    });
+    expect(log).toHaveBeenCalledWith(
+      "[auth] signInDemo failed",
+      expect.objectContaining({ message: "store down" }),
+    );
   });
 
   it("signs in to the demo and redirects to a safe next path", async () => {
