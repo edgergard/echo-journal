@@ -36,6 +36,7 @@ function makeBackend(
     allowed: options.allowed ?? true,
     remaining: 1,
   }));
+  const remaining = vi.fn(async () => ((options.allowed ?? true) ? 1 : 0));
   const backend = {
     entries: {
       list: async (_user: string, opts: { before?: string } = {}) => {
@@ -50,7 +51,7 @@ function makeBackend(
         };
       },
     },
-    usage: { consume },
+    usage: { consume, remaining },
     ai: { summarizeWeek },
   } as unknown as Backend;
   return { backend, summarizeWeek, consume };
@@ -96,8 +97,8 @@ describe("buildWeekData", () => {
     expect(summarizeWeek).not.toHaveBeenCalled();
   });
 
-  it("reports an error when the AI fails", async () => {
-    const { backend } = makeBackend(
+  it("reports an error when the AI fails and uses no quota", async () => {
+    const { backend, consume } = makeBackend(
       [
         makeEntry(1, "2026-11-17T10:00:00.000Z"),
         makeEntry(2, "2026-11-18T10:00:00.000Z"),
@@ -107,6 +108,7 @@ describe("buildWeekData", () => {
     const { summary } = await buildWeekData(backend, "u", WEEK);
     expect(summary.status).toBe("error");
     expect(summary.days).toHaveLength(7);
+    expect(consume).not.toHaveBeenCalled();
   });
 
   it("pages back past newer weeks to reach the requested one", async () => {

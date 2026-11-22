@@ -98,8 +98,9 @@ export async function buildWeekData(
     };
   }
 
-  const usage = await backend.usage.consume(userId);
-  if (!usage.allowed) {
+  // Check the limit first, but use a unit only after the model succeeded, so a
+  // rate-limited (429) or failed call costs nothing — same rule as replies.
+  if ((await backend.usage.remaining(userId)) <= 0) {
     return { summary: { ...base, status: "limit", themes: [] }, entryDates };
   }
 
@@ -110,6 +111,11 @@ export async function buildWeekData(
         ...theme,
         entryIds: theme.entryIds.filter((id) => id in entryDates),
       }));
+    const usage = await backend.usage.consume(userId);
+    if (!usage.allowed) {
+      // Another request took the last unit meanwhile.
+      return { summary: { ...base, status: "limit", themes: [] }, entryDates };
+    }
     if (themesCache.size >= CACHE_MAX && !themesCache.has(cacheKey)) {
       const oldest = themesCache.keys().next().value;
       if (oldest !== undefined) themesCache.delete(oldest);
@@ -119,7 +125,8 @@ export async function buildWeekData(
       summary: { ...base, status: "done", themes },
       entryDates,
     };
-  } catch {
+  } catch (error) {
+    console.error("[week] summarizeWeek failed", error);
     themesCache.delete(cacheKey);
     return { summary: { ...base, status: "error", themes: [] }, entryDates };
   }
