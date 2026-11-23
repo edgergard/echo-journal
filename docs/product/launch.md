@@ -57,7 +57,8 @@ Supabase — отдельный аккаунт для пет-проектов (�
 - [x] Пет-аккаунт Supabase и проект `echo-journal`, ref `nsucnzbzpdgjybixzifb` (you)
 - [x] MCP `supabase-pet` для этой папки: только этот проект, группы database/debugging/development/docs (you — вход; agent — настройка)
 - [ ] Миграция `supabase/migrations/0001_init.sql` через `supabase-pet` + проверка RLS и advisors (agent, по твоему «да»)
-- [ ] Auth → Providers: Email выключить; GitHub включить — OAuth App на GitHub с callback `https://nsucnzbzpdgjybixzifb.supabase.co/auth/v1/callback`, Client ID и Secret в Supabase (you)
+- [x] Auth → Providers → GitHub включён: OAuth App на GitHub с callback `https://nsucnzbzpdgjybixzifb.supabase.co/auth/v1/callback`, Client ID и Secret в Supabase (you, 2026-11-23)
+- [ ] Auth → Providers → Email выключить (you)
 - [ ] Демо-пользователь: Auth → Users → Add user (email + пароль, подтверждён) (you); демо-записи — «Reset demo data» в настройках после первого входа
 - [ ] OpenRouter: ключ, лимит трат $1–2, минимальное пополнение для эмбеддингов (you); модель чата выберем на preview
 - [ ] Vercel (Hobby): импорт `edgergard/echo-journal`, production-ветка `main`; env **до первого деплоя** — `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DEMO_USER_EMAIL`, `DEMO_USER_PASSWORD`, `OPENROUTER_API_KEY`, `OPENROUTER_CHAT_MODEL` — для Production и Preview (you)
