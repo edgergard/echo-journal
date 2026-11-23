@@ -63,7 +63,6 @@ Supabase — отдельный аккаунт для пет-проектов (�
 - [ ] OpenRouter: ключ, лимит трат $1–2, минимальное пополнение для эмбеддингов (you); модель чата выберем на preview
 - [x] Vercel (Hobby): проект подключён, интеграция Supabase ↔ Vercel добавила Supabase-переменные (только Production); добавлены `OPENROUTER_API_KEY` (Production + Preview), `DEMO_USER_EMAIL`, `DEMO_USER_PASSWORD` (you, 2026-11-23)
 - [ ] Vercel: Supabase-переменные отметить и для Preview (you)
-- [ ] Vercel (Hobby): импорт `edgergard/echo-journal`, production-ветка `main`; env **до первого деплоя** — `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DEMO_USER_EMAIL`, `DEMO_USER_PASSWORD`, `OPENROUTER_API_KEY`, `OPENROUTER_CHAT_MODEL` — для Production и Preview (you)
 - [ ] Supabase → Auth → URL Configuration: Site URL = адрес продакшна; Redirect URLs = продакшн `/auth/callback` + шаблон preview (`https://*-<scope>.vercel.app/**`) (you, после создания проекта в Vercel)
 
 ## Деплой (Deploy)
