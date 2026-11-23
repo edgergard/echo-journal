@@ -31,6 +31,8 @@ interface AuthFormProps {
   signInDemo: DemoSignIn;
   /** /auth/callback could not finish the sign-in. */
   callbackFailed?: boolean;
+  /** Show the magic-link form (needs SMTP in Supabase; off in production). */
+  emailEnabled?: boolean;
 }
 
 /** Sign-in: magic link, GitHub, or the demo (design.md: sign-in, AuthForm). */
@@ -40,6 +42,7 @@ export function AuthForm({
   signInWithGitHub,
   signInDemo,
   callbackFailed = false,
+  emailEnabled = true,
 }: AuthFormProps) {
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -162,50 +165,58 @@ export function AuthForm({
         </Button>
       ) : (
         <>
-          <form noValidate onSubmit={onSubmit} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor={emailId} className="text-base">
-                Email
-              </Label>
-              <Input
-                id={emailId}
-                type="email"
-                autoComplete="email"
-                inputMode="email"
-                spellCheck={false}
-                placeholder="you@example.com"
-                aria-invalid={emailError ? true : undefined}
-                aria-describedby={emailError ? emailErrorId : undefined}
-                readOnly={isSubmitting}
-                className="h-11 bg-card px-3 text-base md:text-base"
-                {...register("email")}
-              />
-              {emailError ? (
-                <p id={emailErrorId} className="text-sm text-destructive">
-                  {emailError}
-                </p>
-              ) : null}
-            </div>
-            <Button
-              type="submit"
-              size="lg"
-              disabled={busy}
-              focusableWhenDisabled
-              aria-busy={isSubmitting || undefined}
-              aria-labelledby={submitLabelId}
-              className="h-11 text-base data-disabled:opacity-70"
-            >
-              <PendingLabel id={submitLabelId} pending={isSubmitting}>
-                {isSubmitting ? "Sending…" : "Email me a link"}
-              </PendingLabel>
-            </Button>
-          </form>
+          {emailEnabled ? (
+            <>
+              <form
+                noValidate
+                onSubmit={onSubmit}
+                className="flex flex-col gap-4"
+              >
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor={emailId} className="text-base">
+                    Email
+                  </Label>
+                  <Input
+                    id={emailId}
+                    type="email"
+                    autoComplete="email"
+                    inputMode="email"
+                    spellCheck={false}
+                    placeholder="you@example.com"
+                    aria-invalid={emailError ? true : undefined}
+                    aria-describedby={emailError ? emailErrorId : undefined}
+                    readOnly={isSubmitting}
+                    className="h-11 bg-card px-3 text-base md:text-base"
+                    {...register("email")}
+                  />
+                  {emailError ? (
+                    <p id={emailErrorId} className="text-sm text-destructive">
+                      {emailError}
+                    </p>
+                  ) : null}
+                </div>
+                <Button
+                  type="submit"
+                  size="lg"
+                  disabled={busy}
+                  focusableWhenDisabled
+                  aria-busy={isSubmitting || undefined}
+                  aria-labelledby={submitLabelId}
+                  className="h-11 text-base data-disabled:opacity-70"
+                >
+                  <PendingLabel id={submitLabelId} pending={isSubmitting}>
+                    {isSubmitting ? "Sending…" : "Email me a link"}
+                  </PendingLabel>
+                </Button>
+              </form>
 
-          <div className="flex items-center gap-3 text-sm text-muted-foreground">
-            <span aria-hidden="true" className="h-px flex-1 bg-border" />
-            or
-            <span aria-hidden="true" className="h-px flex-1 bg-border" />
-          </div>
+              <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                <span aria-hidden="true" className="h-px flex-1 bg-border" />
+                or
+                <span aria-hidden="true" className="h-px flex-1 bg-border" />
+              </div>
+            </>
+          ) : null}
 
           <Button
             type="button"

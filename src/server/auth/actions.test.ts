@@ -16,6 +16,19 @@ import {
 import { DEMO_SESSION_COOKIE } from "./demo-cookie";
 
 const jar = vi.hoisted(() => new Map<string, string>());
+const flags = vi.hoisted(() => ({ emailEnabled: true }));
+
+vi.mock("@/env", async (importOriginal) => {
+  const real = await importOriginal<typeof import("@/env")>();
+  return {
+    env: new Proxy(real.env, {
+      get: (target, key, receiver) =>
+        key === "AUTH_EMAIL_ENABLED"
+          ? flags.emailEnabled
+          : Reflect.get(target, key, receiver),
+    }),
+  };
+});
 
 vi.mock("next/headers", () => ({
   cookies: async () => ({
@@ -40,7 +53,17 @@ const UNSAFE_NEXT = ["/\\evil.com", "//evil.com", "https://evil.com"];
 describe("auth actions (demo mode)", () => {
   beforeEach(() => {
     jar.clear();
+    flags.emailEnabled = true;
     resetDemoStoreForTests();
+  });
+
+  it("refuses email sign-in when AUTH_EMAIL_ENABLED is off", async () => {
+    flags.emailEnabled = false;
+    const email = vi.spyOn(getBackend().auth, "signInWithEmail");
+    expect(
+      await sendEmailLinkAction({ email: "sam@example.com", next: "/" }),
+    ).toEqual({ status: "not-configured" });
+    expect(email).not.toHaveBeenCalled();
   });
 
   afterEach(() => {

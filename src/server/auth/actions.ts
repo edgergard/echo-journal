@@ -13,6 +13,7 @@ import {
   type GitHubSignInResult,
 } from "@/components/auth/auth-schema";
 import type { SettingsActionResult } from "@/components/settings/settings-types";
+import { env } from "@/env";
 import { routes, safeNextPath } from "@/lib/routes";
 import { getBackend } from "@/server/backend";
 
@@ -47,6 +48,8 @@ export async function sendEmailLinkAction(
   const parsed = EmailLinkInputSchema.safeParse(input);
   if (!parsed.success) return { status: "invalid" };
   const { email, next } = parsed.data;
+  // Email sign-in is off unless SMTP is set up (launch decision 2026-11-23).
+  if (!env.AUTH_EMAIL_ENABLED) return { status: "not-configured" };
   try {
     const result = await getBackend().auth.signInWithEmail(
       email,

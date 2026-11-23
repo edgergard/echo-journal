@@ -24,6 +24,12 @@ const serverSchema = z.object({
   // Vercel's production domain (set by Vercel), then to localhost.
   SITE_URL: z.url().optional(),
   VERCEL_PROJECT_PRODUCTION_URL: z.string().min(1).optional(),
+  // Magic-link sign-in needs custom SMTP in Supabase; off by default
+  // (GitHub + demo only). "true" to enable.
+  AUTH_EMAIL_ENABLED: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
 });
 
 /**
