@@ -125,4 +125,23 @@ describe("AuthForm", () => {
       "That sign-in link didn't work",
     );
   });
+
+  it("hides the email form when email sign-in is off", () => {
+    render(
+      <AuthForm
+        next="/week"
+        emailEnabled={false}
+        sendEmailLink={vi.fn<SendEmailLink>()}
+        signInWithGitHub={vi.fn<SignInWithGitHub>()}
+        signInDemo={vi.fn<DemoSignIn>()}
+      />,
+    );
+    expect(screen.queryByLabelText("Email")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Continue with GitHub" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Try the demo instead" }),
+    ).toBeInTheDocument();
+  });
 });

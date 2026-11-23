@@ -4,6 +4,7 @@ import { Suspense } from "react";
 
 import { AuthForm } from "@/components/auth/auth-form";
 import { Skeleton } from "@/components/ui/skeleton";
+import { env } from "@/env";
 import { routes } from "@/lib/routes";
 import {
   sendEmailLinkAction,
@@ -25,6 +26,7 @@ async function SignInForm({
     <AuthForm
       next={next}
       callbackFailed={callbackFailed}
+      emailEnabled={env.AUTH_EMAIL_ENABLED}
       sendEmailLink={sendEmailLinkAction}
       signInWithGitHub={signInWithGitHubAction}
       signInDemo={signInDemoAction}
