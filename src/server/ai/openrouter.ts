@@ -29,10 +29,24 @@ function openRouter() {
   return provider;
 }
 
+/**
+ * Journal text is sensitive: route only to providers that don't collect or
+ * train on request data (OpenRouter `provider.data_collection`). Product
+ * decision 2026-11-23 — see docs/product/launch.md.
+ */
+const PRIVATE_ROUTING = { provider: { data_collection: "deny" as const } };
+
+function chatModel() {
+  return openRouter().chat(env.OPENROUTER_CHAT_MODEL, PRIVATE_ROUTING);
+}
+
 /** Embeds a text for memory search (OpenRouter embeddings, 1536 dims). */
 export async function embedText(text: string): Promise<number[]> {
   const { embedding } = await embed({
-    model: openRouter().textEmbeddingModel(env.OPENROUTER_EMBEDDING_MODEL),
+    model: openRouter().textEmbeddingModel(
+      env.OPENROUTER_EMBEDDING_MODEL,
+      PRIVATE_ROUTING,
+    ),
     value: text,
     maxRetries: 1,
   });
@@ -92,7 +106,7 @@ export function normalizeThemes(
 export class OpenRouterAiClient implements AiClient {
   async *streamReflection(request: ReflectionRequest): AsyncIterable<string> {
     const result = streamText({
-      model: openRouter().chat(env.OPENROUTER_CHAT_MODEL),
+      model: chatModel(),
       instructions: REFLECTION_INSTRUCTIONS,
       prompt: buildReflectionPrompt(request),
       // ≤ 120 words ≈ 160 tokens; the cap keeps a rambling model cheap.
@@ -113,7 +127,7 @@ export class OpenRouterAiClient implements AiClient {
 
   async summarizeWeek(entries: Entry[]): Promise<WeekTheme[]> {
     const { output } = await generateText({
-      model: openRouter().chat(env.OPENROUTER_CHAT_MODEL),
+      model: chatModel(),
       instructions: WEEK_INSTRUCTIONS,
       prompt: buildWeekPrompt(entries),
       output: Output.object({ schema: WeekOutputSchema }),
