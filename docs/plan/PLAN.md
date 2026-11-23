@@ -1,6 +1,6 @@
 # Echo Journal — build plan
 
-Status: wave-2 running
+Status: finishing
 Orchestrator launch mode: CLI
 Merge method: GitHub PR into dev
 Repo: C:\Projects\echo-journal Remote: https://github.com/edgergard/echo-journal Visibility: public
@@ -79,16 +79,16 @@ CI needs none of these (demo mode).
 
 ### Wave 2
 
-| Stream    | Branch           | Owns (only these paths)                                                                          | Port | Provider/profile · mode         | Agent ID | Workspace ID         | Status  | PR  |
-| --------- | ---------------- | ------------------------------------------------------------------------------------------------ | ---- | ------------------------------- | -------- | -------------------- | ------- | --- |
-| 2-quality | stream/2-quality | e2e/**, README.md, docs/assets/**, minimal axe fixes in src/app/** + src/components/** (not ui/) | 3105 | claude/claude-sonnet-5-5 · auto | cc886362 | wks_f1b9384e87f6a6b6 | running |     |
+| Stream    | Branch           | Owns (only these paths)                                                                          | Port | Provider/profile · mode         | Agent ID | Workspace ID         | Status | PR  |
+| --------- | ---------------- | ------------------------------------------------------------------------------------------------ | ---- | ------------------------------- | -------- | -------------------- | ------ | --- |
+| 2-quality | stream/2-quality | e2e/**, README.md, docs/assets/**, minimal axe fixes in src/app/** + src/components/** (not ui/) | 3105 | claude/claude-sonnet-5-5 · auto | cc886362 | wks_f1b9384e87f6a6b6 | merged | #7  |
 
 Status values: pending · running · permission · escalation · done (report in) · in review · fixing · merged · failed
 
 ## Metrics
 
 Gate A approved: 2026-11-22 · Gate A rounds: 1
-Retries: 0 · Failed streams: 0 · Escalations: 0 · Red dev fixes: 0 · Review findings fixed: 15 · User corrections: 1
+Retries: 0 · Failed streams: 0 · Escalations: 0 · Red dev fixes: 0 · Review findings fixed: 18 · User corrections: 1
 
 ## Log
 
@@ -106,3 +106,7 @@ Retries: 0 · Failed streams: 0 · Escalations: 0 · Red dev fixes: 0 · Review 
 - 2026-11-23 1-ai merged (#6 → 6b9f1d4); review fixed: in-flight dedupe (409), crisis card independent of save, reply kept on regenerate limit, token caps, 429 busy without quota
 - 2026-11-23 integration fix on dev 8dd76b4: week summary uses quota only after the model succeeds
 - 2026-11-23 wave 2 launched from dev 4030c74 (2-quality, brief updated to what wave 1 built)
+- 2026-11-23 2-quality reported partial (#7): CI e2e red (axe color-contrast on recalled notes mid fade-in), README model wording; orchestrator fix on dev ebbae2c: connection() before new Date() on new-entry and settings
+- 2026-11-23 Paseo daemon stopped mid-fix (session restart); orchestrator finished 2-quality in its worktree: axe with reducedMotion, 90s axe timeout, 20s cold-start wait, README cost notes (2532da6); CI green
+- 2026-11-23 2-quality merged (#7 → ceeb0df); dev fix 59d69b3: connection() on /week; dev CI green, no prerender errors
+- 2026-11-23 cleanup pending: 2-quality workspace wks_f1b9384e87f6a6b6 + branch (archive when the Paseo daemon runs)
