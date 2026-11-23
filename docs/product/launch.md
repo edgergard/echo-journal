@@ -58,9 +58,11 @@ Supabase — отдельный аккаунт для пет-проектов (�
 - [x] MCP `supabase-pet` для этой папки: только этот проект, группы database/debugging/development/docs (you — вход; agent — настройка)
 - [ ] Миграция `supabase/migrations/0001_init.sql` через `supabase-pet` + проверка RLS и advisors (agent, по твоему «да»)
 - [x] Auth → Providers → GitHub включён: OAuth App на GitHub с callback `https://nsucnzbzpdgjybixzifb.supabase.co/auth/v1/callback`, Client ID и Secret в Supabase (you, 2026-11-23)
-- [ ] Auth → Providers → Email выключить (you)
-- [ ] Демо-пользователь: Auth → Users → Add user (email + пароль, подтверждён) (you); демо-записи — «Reset demo data» в настройках после первого входа
+- [x] Auth → Providers → Email выключен (you, 2026-11-23) — проверить на preview, что демо-вход по паролю работает; иначе Email включить обратно (формы в приложении нет, встроенный почтовик пишет только участникам проекта)
+- [x] Демо-пользователь `demo@example.com` (не личная почта), подтверждён; пароль только в Supabase и Vercel (you, 2026-11-23); демо-записи — «Reset demo data» в настройках после первого входа
 - [ ] OpenRouter: ключ, лимит трат $1–2, минимальное пополнение для эмбеддингов (you); модель чата выберем на preview
+- [x] Vercel (Hobby): проект подключён, интеграция Supabase ↔ Vercel добавила Supabase-переменные (только Production); добавлены `OPENROUTER_API_KEY` (Production + Preview), `DEMO_USER_EMAIL`, `DEMO_USER_PASSWORD` (you, 2026-11-23)
+- [ ] Vercel: Supabase-переменные отметить и для Preview (you)
 - [ ] Vercel (Hobby): импорт `edgergard/echo-journal`, production-ветка `main`; env **до первого деплоя** — `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DEMO_USER_EMAIL`, `DEMO_USER_PASSWORD`, `OPENROUTER_API_KEY`, `OPENROUTER_CHAT_MODEL` — для Production и Preview (you)
 - [ ] Supabase → Auth → URL Configuration: Site URL = адрес продакшна; Redirect URLs = продакшн `/auth/callback` + шаблон preview (`https://*-<scope>.vercel.app/**`) (you, после создания проекта в Vercel)
 
