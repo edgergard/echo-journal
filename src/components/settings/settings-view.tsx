@@ -1,4 +1,7 @@
+import Link from "next/link";
+
 import type { Session } from "@/contracts/session";
+import { routes } from "@/lib/routes";
 
 import { DeleteAccountDialog } from "./delete-account-dialog";
 import { ResetDemoButton } from "./reset-demo-button";
@@ -93,6 +96,20 @@ export function SettingsView({
             findahelpline.com
           </a>
           .
+        </p>
+        <p className="flex flex-wrap gap-x-5">
+          <Link
+            href={routes.privacy}
+            className="font-medium text-primary underline underline-offset-4 hover:decoration-2"
+          >
+            Privacy
+          </Link>
+          <Link
+            href={routes.terms}
+            className="font-medium text-primary underline underline-offset-4 hover:decoration-2"
+          >
+            Terms
+          </Link>
         </p>
       </SettingsSection>
 

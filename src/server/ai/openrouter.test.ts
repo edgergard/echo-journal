@@ -7,6 +7,7 @@ import type { Entry } from "@/contracts/journal";
 const mocks = vi.hoisted(() => ({
   chat: undefined as unknown,
   embedding: undefined as unknown,
+  settings: [] as unknown[],
 }));
 
 vi.mock("@/env", () => ({
@@ -18,8 +19,14 @@ vi.mock("@/env", () => ({
 }));
 vi.mock("@openrouter/ai-sdk-provider", () => ({
   createOpenRouter: () => ({
-    chat: () => mocks.chat,
-    textEmbeddingModel: () => mocks.embedding,
+    chat: (_id: string, settings: unknown) => {
+      mocks.settings.push(settings);
+      return mocks.chat;
+    },
+    textEmbeddingModel: (_id: string, settings: unknown) => {
+      mocks.settings.push(settings);
+      return mocks.embedding;
+    },
   }),
 }));
 
@@ -185,6 +192,13 @@ describe("OpenRouterAiClient", () => {
       doEmbed: async () => ({ embeddings: [[0.1, 0.2]], warnings: [] }),
     });
     await expect(embedText("hello")).rejects.toThrow("1536-dim");
+  });
+
+  it("routes every chat and embedding call to providers that don't collect data", () => {
+    expect(mocks.settings.length).toBeGreaterThan(0);
+    for (const settings of mocks.settings) {
+      expect(settings).toEqual({ provider: { data_collection: "deny" } });
+    }
   });
 });
 

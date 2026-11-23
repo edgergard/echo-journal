@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Literata } from "next/font/google";
 
 import { siteConfig } from "@/lib/site-config";
+import { siteUrl } from "@/server/site-url";
 
 import "./globals.css";
 
@@ -27,6 +28,14 @@ export const metadata: Metadata = {
     template: `%s | ${siteConfig.name}`,
   },
   description: siteConfig.description,
+  metadataBase: new URL(siteUrl()),
+  openGraph: {
+    type: "website",
+    siteName: siteConfig.name,
+    title: `${siteConfig.name} — a journal that remembers`,
+    description: siteConfig.description,
+  },
+  twitter: { card: "summary" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

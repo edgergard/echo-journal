@@ -58,6 +58,23 @@ export default function SignInPage(props: PageProps<"/sign-in">) {
       <Suspense fallback={<SignInFormSkeleton />}>
         <SignInForm searchParams={props.searchParams} />
       </Suspense>
+      <p className="text-sm text-muted-foreground">
+        By signing in you agree to the{" "}
+        <Link
+          href={routes.terms}
+          className="font-medium text-primary underline underline-offset-4"
+        >
+          Terms
+        </Link>{" "}
+        and{" "}
+        <Link
+          href={routes.privacy}
+          className="font-medium text-primary underline underline-offset-4"
+        >
+          Privacy
+        </Link>{" "}
+        notes.
+      </p>
     </main>
   );
 }
