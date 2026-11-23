@@ -1,6 +1,6 @@
 # Echo Journal — build plan
 
-Status: finishing
+Status: done
 Orchestrator launch mode: CLI
 Merge method: GitHub PR into dev
 Repo: C:\Projects\echo-journal Remote: https://github.com/edgergard/echo-journal Visibility: public
@@ -110,3 +110,7 @@ Retries: 0 · Failed streams: 0 · Escalations: 0 · Red dev fixes: 0 · Review 
 - 2026-11-23 Paseo daemon stopped mid-fix (session restart); orchestrator finished 2-quality in its worktree: axe with reducedMotion, 90s axe timeout, 20s cold-start wait, README cost notes (2532da6); CI green
 - 2026-11-23 2-quality merged (#7 → ceeb0df); dev fix 59d69b3: connection() on /week; dev CI green, no prerender errors
 - 2026-11-23 cleanup pending: 2-quality workspace wks_f1b9384e87f6a6b6 + branch (archive when the Paseo daemon runs)
+- 2026-11-23 acceptance (fresh agent): Must 2,3,5,6 done in demo mode; 1,4 partial (real Supabase/OpenRouter never run; embedding made at reply time); 7 pending launch (deploy, main merge, GIF, Lighthouse)
+- 2026-11-23 smoke in browser (dev build, demo): landing → demo → journal → entry with recalled notes → new entry → streamed reply + 3 notes → week → dark/mobile; no console errors
+- 2026-11-23 finish fixes 7f6e406: relative dates in seed reply, sentence-case labels, entry read-isolation test
+- 2026-11-23 metrics B-002 appended; retro done (skills 0ea0c39; templates nextjs-pet 2a7ecec, nextjs-commercial 0fe4700, expo-pet 69b2a39, expo-commercial 33e6c43)
