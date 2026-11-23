@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
@@ -64,6 +65,8 @@ async function WeekRoute({
 }: {
   searchParams: PageProps<"/week">["searchParams"];
 }) {
+  // The current week depends on today's date: request time only.
+  await connection();
   const { week } = await searchParams;
   const requested = Array.isArray(week) ? week[0] : week;
   const weekStart = resolveWeekStart(requested);
