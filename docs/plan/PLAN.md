@@ -1,6 +1,6 @@
 # Echo Journal — build plan
 
-Status: foundation
+Status: done
 Orchestrator launch mode: CLI
 Merge method: GitHub PR into dev
 Repo: C:\Projects\echo-journal Remote: https://github.com/edgergard/echo-journal Visibility: public
@@ -19,7 +19,8 @@ A web journal whose AI companion ("Echo") replies to each entry with memory of p
 - **Demo mode (L-029):** with no Supabase env the app runs on an in-memory backend seeded with the demo persona (20 entries), and with no OpenRouter key on a fake AI that streams canned replies — so streams, CI and the smoke run need no keys. Real services switch on when their env vars are set.
 - App screens live in a route group `src/app/(app)/` (URLs unchanged: `/journal`, `/week`, `/settings`) so one layout renders the AppHeader; design.md's Routes table lists the paths without the group.
 - Demo account in real mode: a fixed Supabase user (`DEMO_USER_EMAIL` / `DEMO_USER_PASSWORD`, server-only); "Try the demo" signs in server-side. Demo data reset: "Reset demo data" in settings (daily cron is Later).
-- Daily AI limit: 10 calls per user per UTC day (`AI_DAILY_LIMIT`), replies and week summaries share it.
+- Daily AI limit: 10 calls per user per UTC day (`AI_DAILY_LIMIT`), replies and week summaries share it. The shared demo account keeps the same 10 (user decision 2026-11-23).
+- **Cost: as close to $0 as possible (user, 2026-11-23).** Production chat model = an OpenRouter `:free` model chosen at deploy (set `OPENROUTER_CHAT_MODEL`); reply ≤ ~250 output tokens, week summary ≤ ~400; a provider 429/503 shows "Echo is busy" and uses no quota; spend cap $1–2 on the key. Embeddings stay paid (fractions of a cent).
 - Crisis detection: a keyword/phrase list (English) checked before any AI call; match → crisis card, no model call.
 - Embeddings: `openai/text-embedding-3-small` via OpenRouter, `vector(1536)`; chat: a cheap model via `OPENROUTER_CHAT_MODEL` (default `openai/gpt-4.1-mini`, _assumption_).
 - Accessibility target "Lighthouse a11y ≥ 90" is checked with axe in Playwright e2e plus one Lighthouse run in Phase 5.
@@ -69,27 +70,47 @@ CI needs none of these (demo mode).
 
 ### Wave 1
 
-| Stream    | Branch           | Owns (only these paths)                                                                                                                                                                                         | Port | Provider/profile · mode         | Agent ID | Workspace ID | Status  | PR  |
-| --------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- | ------------------------------- | -------- | ------------ | ------- | --- |
-| 1-auth    | stream/1-auth    | src/app/page.tsx(+test), src/app/sign-in/**, src/app/auth/**, src/app/(app)/settings/**, src/proxy.ts(+test), src/server/auth/**, src/components/auth/**, src/components/settings/**, src/components/landing/** | 3101 | claude/claude-opus-5-5 · auto   |          |              | pending |     |
-| 1-entries | stream/1-entries | src/app/(app)/journal/** , src/server/entries/**, src/components/entries/**                                                                                                                                     | 3102 | claude/claude-sonnet-5-5 · auto |          |              | pending |     |
-| 1-ai      | stream/1-ai      | src/app/api/reflect/**, src/server/ai/**, src/server/memory/**, src/server/reflections/**, src/server/usage/**, src/components/reflection/**                                                                    | 3103 | claude/claude-opus-5-5 · auto   |          |              | pending |     |
-| 1-week    | stream/1-week    | src/app/(app)/week/**, src/app/api/week/**, src/server/week/**, src/components/week/**                                                                                                                          | 3104 | claude/claude-sonnet-5-5 · auto |          |              | pending |     |
+| Stream    | Branch           | Owns (only these paths)                                                                                                                                                                                         | Port | Provider/profile · mode         | Agent ID | Workspace ID         | Status | PR  |
+| --------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- | ------------------------------- | -------- | -------------------- | ------ | --- |
+| 1-auth    | stream/1-auth    | src/app/page.tsx(+test), src/app/sign-in/**, src/app/auth/**, src/app/(app)/settings/**, src/proxy.ts(+test), src/server/auth/**, src/components/auth/**, src/components/settings/**, src/components/landing/** | 3101 | claude/claude-opus-5-5 · auto   | e429c983 | wks_ad278f649ad8dcef | merged | #5  |
+| 1-entries | stream/1-entries | src/app/(app)/journal/** , src/server/entries/**, src/components/entries/**                                                                                                                                     | 3102 | claude/claude-sonnet-5-5 · auto | d190bb17 | wks_43af7e54ab8d649e | merged | #4  |
+| 1-ai      | stream/1-ai      | src/app/api/reflect/**, src/server/ai/**, src/server/memory/**, src/server/reflections/**, src/server/usage/**, src/components/reflection/**                                                                    | 3103 | claude/claude-opus-5-5 · auto   | ff4516e1 | wks_9bafda538d0201f9 | merged | #6  |
+| 1-week    | stream/1-week    | src/app/(app)/week/**, src/app/api/week/**, src/server/week/**, src/components/week/**                                                                                                                          | 3104 | claude/claude-sonnet-5-5 · auto | 025fd37b | wks_38e979a77109001b | merged | #3  |
 
 ### Wave 2
 
-| Stream    | Branch           | Owns (only these paths)           | Port | Provider/profile · mode         | Agent ID | Workspace ID | Status  | PR  |
-| --------- | ---------------- | --------------------------------- | ---- | ------------------------------- | -------- | ------------ | ------- | --- |
-| 2-quality | stream/2-quality | e2e/**, README.md, docs/assets/** | 3105 | claude/claude-sonnet-5-5 · auto |          |              | pending |     |
+| Stream    | Branch           | Owns (only these paths)                                                                          | Port | Provider/profile · mode         | Agent ID | Workspace ID         | Status | PR  |
+| --------- | ---------------- | ------------------------------------------------------------------------------------------------ | ---- | ------------------------------- | -------- | -------------------- | ------ | --- |
+| 2-quality | stream/2-quality | e2e/**, README.md, docs/assets/**, minimal axe fixes in src/app/** + src/components/** (not ui/) | 3105 | claude/claude-sonnet-5-5 · auto | cc886362 | wks_f1b9384e87f6a6b6 | merged | #7  |
 
 Status values: pending · running · permission · escalation · done (report in) · in review · fixing · merged · failed
 
 ## Metrics
 
 Gate A approved: 2026-11-22 · Gate A rounds: 1
-Retries: 0 · Failed streams: 0 · Escalations: 0 · Red dev fixes: 0 · Review findings fixed: 0 · User corrections: 0
+Retries: 0 · Failed streams: 0 · Escalations: 0 · Red dev fixes: 0 · Review findings fixed: 18 · User corrections: 1
 
 ## Log
 
 - 2026-11-22 plan drafted; Gate A approved (round 1)
 - 2026-11-22 repo created from template-nextjs-pet (b6f837a); foundation: tokens, Literata, deps, shadcn, contracts, demo backend + seed, stubs, migration, Playwright + CI e2e job
+- 2026-11-22 wave 1 launched from dev 4cba4b6 (4 streams, CLI mode, mode auto confirmed)
+- 2026-11-22 1-week reported done (PR #3); review: 2 findings (limit burn on every view, no loading on week change) sent back
+- 2026-11-22 1-week merged (#3 → 914290c); review fixed: limit burn on every view (in-process theme cache), loading state on week change
+- 2026-11-22 1-entries merged (#4 → 5f7a8be); review fixed: logged swallowed errors, 'Echo replied' in card label, ?saved=1 dropped after announce
+- 2026-11-22 contract fix on dev c1c3cce: safeNextPath rejected backslash/control-char open redirects (found in 1-auth review)
+- 2026-11-22 1-auth (#5) sent back: integrate c1c3cce + malicious-next tests, log swallowed errors
+- 2026-11-22 1-ai (#6) sent back: duplicate in-flight generation, crisis card independent of save, keep reply on regenerate limit
+- 2026-11-23 user: costs to the minimum → free chat model, token caps, 429 = busy without quota; demo limit stays 10
+- 2026-11-23 1-auth merged (#5 → 2efe955); review fixed: next-path tests incl. backslash tricks, logged swallowed errors (+ unstable_rethrow for redirect errors)
+- 2026-11-23 1-ai merged (#6 → 6b9f1d4); review fixed: in-flight dedupe (409), crisis card independent of save, reply kept on regenerate limit, token caps, 429 busy without quota
+- 2026-11-23 integration fix on dev 8dd76b4: week summary uses quota only after the model succeeds
+- 2026-11-23 wave 2 launched from dev 4030c74 (2-quality, brief updated to what wave 1 built)
+- 2026-11-23 2-quality reported partial (#7): CI e2e red (axe color-contrast on recalled notes mid fade-in), README model wording; orchestrator fix on dev ebbae2c: connection() before new Date() on new-entry and settings
+- 2026-11-23 Paseo daemon stopped mid-fix (session restart); orchestrator finished 2-quality in its worktree: axe with reducedMotion, 90s axe timeout, 20s cold-start wait, README cost notes (2532da6); CI green
+- 2026-11-23 2-quality merged (#7 → ceeb0df); dev fix 59d69b3: connection() on /week; dev CI green, no prerender errors
+- 2026-11-23 cleanup pending: 2-quality workspace wks_f1b9384e87f6a6b6 + branch (archive when the Paseo daemon runs)
+- 2026-11-23 acceptance (fresh agent): Must 2,3,5,6 done in demo mode; 1,4 partial (real Supabase/OpenRouter never run; embedding made at reply time); 7 pending launch (deploy, main merge, GIF, Lighthouse)
+- 2026-11-23 smoke in browser (dev build, demo): landing → demo → journal → entry with recalled notes → new entry → streamed reply + 3 notes → week → dark/mobile; no console errors
+- 2026-11-23 finish fixes 7f6e406: relative dates in seed reply, sentence-case labels, entry read-isolation test
+- 2026-11-23 metrics B-002 appended; retro done (skills 0ea0c39; templates nextjs-pet 2a7ecec, nextjs-commercial 0fe4700, expo-pet 69b2a39, expo-commercial 33e6c43)

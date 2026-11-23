@@ -11,5 +11,19 @@ describe("safeNextPath", () => {
     expect(safeNextPath(null)).toBe(routes.journal);
     expect(safeNextPath("https://evil.example")).toBe(routes.journal);
     expect(safeNextPath("//evil.example")).toBe(routes.journal);
+    expect(safeNextPath("")).toBe(routes.journal);
+    expect(safeNextPath("journal")).toBe(routes.journal);
+  });
+
+  it("rejects backslash and control-character tricks", () => {
+    for (const next of [
+      "/\\evil.example",
+      "/\\/evil.example",
+      "/\t/evil.example",
+      "/\n/evil.example",
+      "/%5C%5Cevil.example".replace(/%5C/g, "\\"),
+    ]) {
+      expect(safeNextPath(next)).toBe(routes.journal);
+    }
   });
 });
