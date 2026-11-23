@@ -39,12 +39,12 @@ export default function PrivacyPage() {
           database where each account can only read its own rows.
         </li>
         <li>
-          <strong>OpenRouter</strong> passes text to an AI model to write
-          Echo&apos;s reply, the weekly summary and the embeddings: the entry
-          (up to 2,000 characters), short quotes from your past entries, and for
-          the summary up to 600 characters per entry of that week. Requests are
-          restricted to model providers that do not collect or train on the
-          data.
+          <strong>OpenRouter</strong> passes text to an AI model: for a reply,
+          the entry (up to 2,000 characters) and short quotes from your past
+          entries; for memory, the full entry text (up to 5,000 characters) to
+          compute its embedding; for the weekly summary, up to 600 characters
+          per entry of that week. Requests are restricted to model providers
+          that do not collect or train on the data.
         </li>
         <li>
           <strong>Vercel</strong> hosts the site and keeps standard request logs
@@ -59,8 +59,10 @@ export default function PrivacyPage() {
       <h2>How long, and deletion</h2>
       <p>
         Your data stays until you delete it. Deleting an entry removes it, its
-        reply and its embedding. Settings → Delete account removes your account
-        and everything in it. The shared demo account can be reset at any time;
+        reply and its embedding; short quotes of it shown as
+        &quot;Recalled&quot; notes under later replies stay until those entries
+        are deleted. Settings → Delete account removes your account and
+        everything in it. The shared demo account can be reset at any time;
         don&apos;t write anything personal there.
       </p>
 
