@@ -97,4 +97,15 @@ describe("entry service (memory backend)", () => {
     );
     expect(result.ok).toBe(false);
   });
+
+  it("never lists, reads or deletes another user's entries", async () => {
+    const repo = new MemoryEntriesRepo();
+    const owner = `u-${crypto.randomUUID()}`;
+    const stranger = `u-${crypto.randomUUID()}`;
+    const entry = await repo.create(owner, { text: "private", mood: "low" });
+    expect((await repo.list(stranger)).entries).toEqual([]);
+    expect(await repo.get(stranger, entry.id)).toBeNull();
+    expect(await repo.remove(stranger, entry.id)).toBe(false);
+    expect(await repo.get(owner, entry.id)).not.toBeNull();
+  });
 });

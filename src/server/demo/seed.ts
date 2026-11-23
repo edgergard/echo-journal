@@ -113,7 +113,7 @@ const REPLIES: Record<
   { text: string; recalled: { index: number; quote: string }[] }
 > = {
   0: {
-    text: "A quiet flat after a loud month is worth noticing. Last Sunday you wrote about arguing with your dad over this move — have you two talked since? And the letters you found on Thursday: it sounds like this move is carrying more than boxes. What would make the new place feel like yours this week?",
+    text: "A quiet flat after a loud month is worth noticing. A few days ago you wrote about arguing with your dad over this move — have you two talked since? And the letters you found while packing: it sounds like this move is carrying more than boxes. What would make the new place feel like yours this week?",
     recalled: [
       { index: 3, quote: "I said things I didn’t mean." },
       { index: 1, quote: "found the letters from my grandmother" },

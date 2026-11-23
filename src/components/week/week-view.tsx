@@ -49,7 +49,7 @@ export function WeekView({ initial, refresh, dailyLimit }: WeekViewProps) {
       >
         <h2
           id="mood-heading"
-          className="mb-4 text-xs font-semibold tracking-widest text-muted-foreground uppercase"
+          className="mb-4 text-sm font-semibold text-muted-foreground"
         >
           Mood
         </h2>

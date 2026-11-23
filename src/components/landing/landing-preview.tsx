@@ -24,9 +24,7 @@ export function LandingPreview() {
         </article>
 
         <div className="flex flex-col gap-2.5">
-          <p className="text-xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
-            Echo
-          </p>
+          <p className="text-sm font-semibold text-muted-foreground">Echo</p>
           <div className="rounded-md border bg-card p-5 text-card-foreground sm:p-7">
             <p className="max-w-[68ch] font-serif text-[1.0625rem] leading-[1.7]">
               A quiet flat after a loud month is worth noticing. Last Sunday you
