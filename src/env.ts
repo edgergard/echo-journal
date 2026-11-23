@@ -20,6 +20,10 @@ const serverSchema = z.object({
     .min(1)
     .default("openai/text-embedding-3-small"),
   AI_DAILY_LIMIT: z.coerce.number().int().positive().default(10),
+  // Canonical site URL for metadata, robots and sitemap. Falls back to
+  // Vercel's production domain (set by Vercel), then to localhost.
+  SITE_URL: z.url().optional(),
+  VERCEL_PROJECT_PRODUCTION_URL: z.string().min(1).optional(),
 });
 
 /**

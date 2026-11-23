@@ -10,6 +10,8 @@ export const routes = {
   week: (weekStart?: string) =>
     weekStart ? `/week?week=${weekStart}` : "/week",
   settings: "/settings",
+  privacy: "/privacy",
+  terms: "/terms",
   api: {
     reflect: "/api/reflect",
     week: (weekStart: string) => `/api/week?weekStart=${weekStart}`,

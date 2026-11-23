@@ -48,12 +48,26 @@ export default function LandingPage() {
       <footer className="border-t">
         <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-6 py-6 text-sm text-muted-foreground">
           <p>Not a therapist. Not medical advice.</p>
-          <a
-            href={env.NEXT_PUBLIC_REPO_URL}
-            className="py-2 font-medium text-primary underline-offset-4 hover:underline"
-          >
-            Source code on GitHub
-          </a>
+          <nav aria-label="Footer" className="flex flex-wrap gap-x-5">
+            <Link
+              href={routes.privacy}
+              className="py-2 font-medium text-primary underline-offset-4 hover:underline"
+            >
+              Privacy
+            </Link>
+            <Link
+              href={routes.terms}
+              className="py-2 font-medium text-primary underline-offset-4 hover:underline"
+            >
+              Terms
+            </Link>
+            <a
+              href={env.NEXT_PUBLIC_REPO_URL}
+              className="py-2 font-medium text-primary underline-offset-4 hover:underline"
+            >
+              Source code on GitHub
+            </a>
+          </nav>
         </div>
       </footer>
     </>
